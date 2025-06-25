@@ -1,10 +1,10 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Home from '../page';
-import { useStatusData } from '../hooks/useStatusData';
+import { useStatusWithUser } from '../hooks/useStatusWithUser';
 
 // Mock the hooks
-jest.mock('../hooks/useStatusData');
+jest.mock('../hooks/useStatusWithUser');
 
 // Mock the useAuth hook
 jest.mock('../contexts/AuthContext', () => ({
@@ -31,8 +31,9 @@ describe('Home Page Integration', () => {
   const mockUpdateWaterIntake = jest.fn();
   const mockUpdateAltitude = jest.fn();
   const mockResetData = jest.fn();
+  const mockSelectUser = jest.fn();
 
-  const defaultMockData = {
+  const defaultMockDataForAdmin = {
     statusData: {
       lastWaterIntake: '',
       altitude: 5,
@@ -40,11 +41,38 @@ describe('Home Page Integration', () => {
     },
     isLoading: false,
     error: null,
+    selectedUserId: null,
+    adminUsers: [],
+    canEdit: true,
     actions: {
       updateWaterIntake: mockUpdateWaterIntake,
       updateAltitude: mockUpdateAltitude,
       resetData: mockResetData,
-      refresh: jest.fn()
+      refresh: jest.fn(),
+      selectUser: mockSelectUser
+    }
+  };
+
+  const defaultMockDataForViewer = {
+    statusData: {
+      lastWaterIntake: '',
+      altitude: 5,
+      lastUpdated: ''
+    },
+    isLoading: false,
+    error: null,
+    selectedUserId: null,
+    adminUsers: [
+      { id: 1, username: 'admin1', role: 'admin' as const, createdAt: '2024-01-01', lastLogin: '2024-01-15' },
+      { id: 2, username: 'admin2', role: 'admin' as const, createdAt: '2024-01-02', lastLogin: '2024-01-14' }
+    ],
+    canEdit: false,
+    actions: {
+      updateWaterIntake: mockUpdateWaterIntake,
+      updateAltitude: mockUpdateAltitude,
+      resetData: mockResetData,
+      refresh: jest.fn(),
+      selectUser: mockSelectUser
     }
   };
 
@@ -52,7 +80,7 @@ describe('Home Page Integration', () => {
     jest.clearAllMocks();
     jest.useFakeTimers();
     jest.setSystemTime(new Date('2024-01-15T12:00:00Z'));
-    (useStatusData as jest.Mock).mockReturnValue(defaultMockData);
+    (useStatusWithUser as jest.Mock).mockReturnValue(defaultMockDataForAdmin);
   });
 
   afterEach(() => {
@@ -61,8 +89,8 @@ describe('Home Page Integration', () => {
 
   describe('loading state', () => {
     it('should show loading spinner when data is loading', () => {
-      (useStatusData as jest.Mock).mockReturnValue({
-        ...defaultMockData,
+      (useStatusWithUser as jest.Mock).mockReturnValue({
+        ...defaultMockDataForAdmin,
         isLoading: true
       });
 
@@ -76,8 +104,8 @@ describe('Home Page Integration', () => {
   describe('error state', () => {
     it('should show error message when there is an error', () => {
       const error = 'Failed to load data';
-      (useStatusData as jest.Mock).mockReturnValue({
-        ...defaultMockData,
+      (useStatusWithUser as jest.Mock).mockReturnValue({
+        ...defaultMockDataForAdmin,
         error
       });
 
@@ -88,8 +116,8 @@ describe('Home Page Integration', () => {
     });
   });
 
-  describe('normal state', () => {
-    it('should render all status components', () => {
+  describe('admin user state', () => {
+    it('should render all status components for admin with edit capabilities', () => {
       render(<Home />);
 
       // Water intake card
@@ -106,13 +134,95 @@ describe('Home Page Integration', () => {
       expect(screen.getByRole('heading', { name: /Status Summary/i })).toBeInTheDocument();
       expect(screen.getByText('Hydration Status:')).toBeInTheDocument();
       expect(screen.getByText('Mood Level:')).toBeInTheDocument();
+
+      // Should NOT show admin selector for admin users
+      expect(screen.queryByText('View Status for Admin:')).not.toBeInTheDocument();
     });
 
+    it('should allow admin to interact with controls', async () => {
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      
+      render(<Home />);
+
+      const waterButton = screen.getByRole('button', { name: /Update water intake/i });
+      await user.click(waterButton);
+
+      expect(mockUpdateWaterIntake).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('viewer user state', () => {
+    beforeEach(() => {
+      // Mock as viewer user
+      jest.doMock('../contexts/AuthContext', () => ({
+        useAuth: () => ({
+          user: { id: 3, username: 'viewer', role: 'viewer' },
+          token: 'mock-token',
+          isAuthenticated: true,
+          isAdmin: false,
+          isLoading: false,
+          login: jest.fn(),
+          register: jest.fn(),
+          logout: jest.fn(),
+          error: null,
+        }),
+        AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+      }));
+      (useStatusWithUser as jest.Mock).mockReturnValue(defaultMockDataForViewer);
+    });
+
+    it('should show admin selector for viewer users', () => {
+      render(<Home />);
+
+      expect(screen.getByText('View Status for Admin:')).toBeInTheDocument();
+      expect(screen.getByRole('combobox')).toBeInTheDocument();
+      expect(screen.getByText('admin1')).toBeInTheDocument();
+      expect(screen.getByText('admin2')).toBeInTheDocument();
+    });
+
+    it('should show message when no admin is selected', () => {
+      render(<Home />);
+
+      expect(screen.getByText('Please select an admin above to view their status data.')).toBeInTheDocument();
+      // Status components should not be visible
+      expect(screen.queryByRole('heading', { name: /Water Intake/i })).not.toBeInTheDocument();
+    });
+
+    it('should show status data when admin is selected', () => {
+      (useStatusWithUser as jest.Mock).mockReturnValue({
+        ...defaultMockDataForViewer,
+        selectedUserId: '1'
+      });
+
+      render(<Home />);
+
+      // Status components should be visible
+      expect(screen.getByRole('heading', { name: /Water Intake/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Altitude \(Mood\)/i })).toBeInTheDocument();
+      
+      // But should be in read-only mode
+      expect(screen.getByText('👁️ View-only mode')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Update water intake/i })).not.toBeInTheDocument();
+    });
+
+    it('should call selectUser when admin is selected from dropdown', async () => {
+      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+      
+      render(<Home />);
+
+      const select = screen.getByRole('combobox');
+      await user.selectOptions(select, '1');
+
+      expect(mockSelectUser).toHaveBeenCalledWith('1');
+    });
+  });
+
+  describe('data display', () => {
     it('should display data correctly when status data is populated', () => {
       const twoHoursAgo = new Date(Date.now() - 2 * 3600000).toISOString();
       
-      (useStatusData as jest.Mock).mockReturnValue({
-        ...defaultMockData,
+      (useStatusWithUser as jest.Mock).mockReturnValue({
+        ...defaultMockDataForAdmin,
         statusData: {
           lastWaterIntake: twoHoursAgo,
           altitude: 8,
@@ -135,24 +245,29 @@ describe('Home Page Integration', () => {
   });
 
   describe('user interactions', () => {
-    it('should update water intake when button is clicked', async () => {
-      const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-      
-      render(<Home />);
-
-      const waterButton = screen.getByRole('button', { name: /Update water intake/i });
-      await user.click(waterButton);
-
-      expect(mockUpdateWaterIntake).toHaveBeenCalledTimes(1);
-    });
-
-    it('should update altitude when slider is changed', () => {
+    it('should update altitude when slider is changed (admin only)', () => {
       render(<Home />);
 
       const slider = screen.getByRole('slider');
       fireEvent.change(slider, { target: { value: '8' } });
 
       expect(mockUpdateAltitude).toHaveBeenCalledWith(8);
+    });
+
+    it('should not allow interactions when user cannot edit', () => {
+      (useStatusWithUser as jest.Mock).mockReturnValue({
+        ...defaultMockDataForViewer,
+        selectedUserId: '1'
+      });
+
+      render(<Home />);
+
+      // Should show read-only indicators
+      expect(screen.getAllByText('👁️ View-only mode')).toHaveLength(2); // One for each card
+      
+      // Should have disabled slider
+      const slider = screen.getByRole('slider');
+      expect(slider).toBeDisabled();
     });
   });
 
@@ -170,8 +285,8 @@ describe('Home Page Integration', () => {
       // Mock console.error to prevent error output in tests
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
 
-      // Force an error in useStatusData
-      (useStatusData as jest.Mock).mockImplementation(() => {
+      // Force an error in useStatusWithUser
+      (useStatusWithUser as jest.Mock).mockImplementation(() => {
         throw new Error('Component error');
       });
 
@@ -193,8 +308,8 @@ describe('Home Page Integration', () => {
 
       // Update mock data
       const now = new Date().toISOString();
-      (useStatusData as jest.Mock).mockReturnValue({
-        ...defaultMockData,
+      (useStatusWithUser as jest.Mock).mockReturnValue({
+        ...defaultMockDataForAdmin,
         statusData: {
           lastWaterIntake: now,
           altitude: 9,

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/Button';
 import { LoadingSpinner } from '../ui/LoadingSpinner';
+import { PrivacyPolicyModal } from './PrivacyPolicyModal';
 
 interface RegisterFormProps {
   onBackToLogin: () => void;
@@ -13,6 +14,7 @@ interface RegisterFormData {
   username: string;
   password: string;
   confirmPassword: string;
+  privacyPolicyAccepted: boolean;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -21,11 +23,13 @@ export function RegisterForm({ onBackToLogin, onSuccess }: RegisterFormProps) {
   const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    privacyPolicyAccepted: false
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -53,6 +57,9 @@ export function RegisterForm({ onBackToLogin, onSuccess }: RegisterFormProps) {
     if (formData.password !== formData.confirmPassword) {
       return 'Passwords do not match';
     }
+    if (!formData.privacyPolicyAccepted) {
+      return 'You must accept the privacy policy to register';
+    }
     return null;
   };
 
@@ -77,6 +84,7 @@ export function RegisterForm({ onBackToLogin, onSuccess }: RegisterFormProps) {
         body: JSON.stringify({
           username: formData.username.trim(),
           password: formData.password,
+          privacyPolicyAccepted: formData.privacyPolicyAccepted,
         }),
       });
 
@@ -92,7 +100,6 @@ export function RegisterForm({ onBackToLogin, onSuccess }: RegisterFormProps) {
       }, 2000);
 
     } catch (error) {
-      console.error('Registration error:', error);
       setError(error instanceof Error ? error.message : 'Registration failed');
     } finally {
       setIsLoading(false);
@@ -207,6 +214,38 @@ export function RegisterForm({ onBackToLogin, onSuccess }: RegisterFormProps) {
                          dark:bg-gray-700 dark:text-white dark:focus:ring-blue-400"
               />
             </div>
+
+            <div>
+              <div className="flex items-start space-x-3">
+                <input
+                  id="privacyPolicy"
+                  name="privacyPolicyAccepted"
+                  type="checkbox"
+                  checked={formData.privacyPolicyAccepted}
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    privacyPolicyAccepted: e.target.checked
+                  }))}
+                  className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <div className="text-sm">
+                  <label htmlFor="privacyPolicy" className="text-gray-700 dark:text-gray-300">
+                    I accept the{' '}
+                    <button
+                      type="button"
+                      onClick={() => setShowPrivacyModal(true)}
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
+                    >
+                      Privacy Policy
+                    </button>
+                    {' '}and agree to the collection and processing of my data as described.
+                  </label>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Required to create an account. Click to view the full policy.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -252,6 +291,20 @@ export function RegisterForm({ onBackToLogin, onSuccess }: RegisterFormProps) {
           </div>
         </form>
       </div>
+
+      <PrivacyPolicyModal
+        isOpen={showPrivacyModal}
+        onAccept={() => {
+          setFormData(prev => ({
+            ...prev,
+            privacyPolicyAccepted: true
+          }));
+          setShowPrivacyModal(false);
+        }}
+        onDecline={() => {
+          setShowPrivacyModal(false);
+        }}
+      />
     </div>
   );
 }

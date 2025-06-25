@@ -82,7 +82,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await authService.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      // Silently handle logout errors
     } finally {
       setUser(null);
       setToken(null);

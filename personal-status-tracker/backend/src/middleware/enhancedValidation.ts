@@ -27,7 +27,7 @@ function sanitizeString(input: string): string {
 function containsSuspiciousContent(input: string): boolean {
   const suspiciousPatterns = [
     // SQL injection patterns
-    /('|(\\')|(;)|(\|\|)|(--)|(\+)/i,
+    /('|(\\')|(;)|(\|\|)|(--)|(\+))/i,
     /(exec|execute|select|union|insert|update|delete|drop|create|alter|declare)/i,
     
     // XSS patterns

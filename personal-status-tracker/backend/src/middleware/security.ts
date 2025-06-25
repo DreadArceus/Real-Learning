@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { config } from '../config';
+import { logger } from './logging';
 
 /**
  * Security middleware configuration for production readiness
@@ -119,6 +120,7 @@ export const trackRequests = (req: Request, res: Response, next: NextFunction) =
   const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
   const now = Date.now();
   const windowMs = 60000; // 1 minute
+  const requestLimit = 1000; // 1000 requests per minute
   
   if (!requestTracker.has(clientIP)) {
     requestTracker.set(clientIP, { count: 1, lastReset: now });
@@ -134,15 +136,18 @@ export const trackRequests = (req: Request, res: Response, next: NextFunction) =
     }
     
     // Log suspicious activity (high request count)
-    if (tracker.count > 1000) { // 1000 requests per minute
-      console.warn(`High request rate detected from IP: ${clientIP}, Count: ${tracker.count}`);
+    if (tracker.count > requestLimit) {
+      logger.warn(`High request rate detected from IP: ${clientIP}, Count: ${tracker.count}`);
     }
   }
   
   // Add rate info to request for monitoring
+  const tracker = requestTracker.get(clientIP)!;
   req.rateInfo = {
-    ip: clientIP,
-    count: requestTracker.get(clientIP)!.count
+    limit: requestLimit,
+    current: tracker.count,
+    remaining: requestLimit - tracker.count,
+    resetTime: new Date(tracker.lastReset + windowMs)
   };
   
   next();

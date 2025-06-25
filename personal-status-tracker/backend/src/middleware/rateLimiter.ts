@@ -1,6 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import { Request, Response } from 'express';
 import { config } from '../config';
+import { logger } from './logging';
 
 /**
  * Rate limiting middleware for different endpoints
@@ -22,7 +23,7 @@ export const generalLimiter = rateLimit({
     return req.ip || req.connection.remoteAddress || 'unknown';
   },
   handler: (req: Request, res: Response) => {
-    console.warn(`Rate limit exceeded for IP: ${req.ip}, Path: ${req.path}`);
+    logger.warn(`Rate limit exceeded for IP: ${req.ip}, Path: ${req.path}`);
     res.status(429).json({
       success: false,
       error: 'Too many requests, please try again later',
@@ -50,7 +51,7 @@ export const authLimiter = rateLimit({
     return `${ip}:${username}`;
   },
   handler: (req: Request, res: Response) => {
-    console.warn(`Auth rate limit exceeded for IP: ${req.ip}, Username: ${req.body?.username}`);
+    logger.warn(`Auth rate limit exceeded for IP: ${req.ip}, Username: ${req.body?.username}`);
     res.status(429).json({
       success: false,
       error: 'Too many authentication attempts, please try again later',
@@ -75,7 +76,7 @@ export const registrationLimiter = rateLimit({
     return req.ip || req.connection.remoteAddress || 'unknown';
   },
   handler: (req: Request, res: Response) => {
-    console.warn(`Registration rate limit exceeded for IP: ${req.ip}`);
+    logger.warn(`Registration rate limit exceeded for IP: ${req.ip}`);
     res.status(429).json({
       success: false,
       error: 'Too many registration attempts, please try again later',
@@ -103,7 +104,7 @@ export const adminLimiter = rateLimit({
     return userId ? `user:${userId}` : `ip:${ip}`;
   },
   handler: (req: Request, res: Response) => {
-    console.warn(`Admin rate limit exceeded for User: ${req.user?.userId || 'N/A'}, IP: ${req.ip}`);
+    logger.warn(`Admin rate limit exceeded for User: ${req.user?.userId || 'N/A'}, IP: ${req.ip}`);
     res.status(429).json({
       success: false,
       error: 'Too many admin requests, please try again later',
@@ -147,7 +148,7 @@ export const progressiveLimiter = (baseMax: number, windowMs: number) => {
         tracker.lastViolation = now;
       }
       
-      console.warn(`Progressive rate limit exceeded for IP: ${key}, Violations: ${progressiveTracker.get(key)?.violations}`);
+      logger.warn(`Progressive rate limit exceeded for IP: ${key}, Violations: ${progressiveTracker.get(key)?.violations}`);
       
       res.status(429).json({
         success: false,

@@ -1,20 +1,20 @@
 export interface StatusData {
   id?: number;
   userId?: string;
-  lastWaterIntake: string;
-  altitude: number;
+  lastWaterIntake: string | null;
+  altitude: number | null;
   lastUpdated: string;
   createdAt?: string;
 }
 
 export interface CreateStatusRequest {
-  lastWaterIntake: string;
-  altitude: number;
+  lastWaterIntake: string | null;
+  altitude: number | null;
 }
 
 export interface UpdateStatusRequest {
-  lastWaterIntake?: string;
-  altitude?: number;
+  lastWaterIntake?: string | null;
+  altitude?: number | null;
 }
 
 export interface ApiResponse<T = any> {
@@ -32,6 +32,9 @@ export interface User {
   role: 'admin' | 'viewer';
   createdAt?: string;
   lastLogin?: string;
+  privacyPolicyAccepted?: boolean;
+  privacyPolicyVersion?: string;
+  privacyPolicyAcceptedDate?: string;
 }
 
 export interface AuthTokenPayload {

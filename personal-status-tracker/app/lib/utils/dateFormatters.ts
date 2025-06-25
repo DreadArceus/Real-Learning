@@ -21,7 +21,6 @@ export function formatTimeAgo(isoString: string): string {
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
     return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
   } catch (error) {
-    console.error('Error formatting time:', error);
     return 'Invalid date';
   }
 }
@@ -36,7 +35,6 @@ export function calculateHoursSince(isoString: string): number {
     const now = new Date();
     return (now.getTime() - date.getTime()) / TIME_UNITS.HOUR;
   } catch (error) {
-    console.error('Error calculating hours:', error);
     return Infinity;
   }
 }
@@ -50,7 +48,6 @@ export function formatDateTime(isoString: string): string {
     
     return date.toLocaleString();
   } catch (error) {
-    console.error('Error formatting date:', error);
     return 'Invalid date';
   }
 }

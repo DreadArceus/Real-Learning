@@ -13,9 +13,8 @@ export class Database {
   constructor() {
     this.db = new sqlite.Database(dbPath, (err) => {
       if (err) {
-        console.error('Error opening database:', err.message);
+        throw new Error(`Database connection failed: ${err.message}`);
       } else {
-        console.log('Connected to SQLite database.');
         this.initializeTables();
       }
     });
@@ -47,18 +46,14 @@ export class Database {
     // Create users table first
     this.db.run(createUsersTable, (err) => {
       if (err) {
-        console.error('Error creating users table:', err.message);
-      } else {
-        console.log('Users table ready.');
+        throw new Error(`Users table creation failed: ${err.message}`);
       }
     });
 
     // Create status entries table
     this.db.run(createStatusTable, (err) => {
       if (err) {
-        console.error('Error creating status_entries table:', err.message);
-      } else {
-        console.log('Status entries table ready.');
+        throw new Error(`Status table creation failed: ${err.message}`);
       }
     });
   }
@@ -70,9 +65,7 @@ export class Database {
   public close(): void {
     this.db.close((err) => {
       if (err) {
-        console.error('Error closing database:', err.message);
-      } else {
-        console.log('Database connection closed.');
+        throw new Error(`Database close failed: ${err.message}`);
       }
     });
   }

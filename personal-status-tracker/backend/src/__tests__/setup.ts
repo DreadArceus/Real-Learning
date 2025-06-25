@@ -1,8 +1,15 @@
-import { config } from '../config';
-
-// Set test environment variables
+// Set test environment variables BEFORE importing config
 process.env.NODE_ENV = 'test';
 process.env.DATABASE_PATH = './data/test.db';
+process.env.PORT = '3001';
+process.env.FRONTEND_URL = 'http://localhost:3000';
+process.env.API_RATE_LIMIT_WINDOW_MS = '900000';
+process.env.API_RATE_LIMIT_MAX_REQUESTS = '100';
+process.env.JWT_SECRET = 'test-jwt-secret';
+process.env.JWT_EXPIRES_IN = '24h';
+process.env.LOG_LEVEL = 'error';
+
+import { config } from '../config';
 
 // Global test setup
 beforeAll(() => {

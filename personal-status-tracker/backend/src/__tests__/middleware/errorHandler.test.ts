@@ -10,6 +10,15 @@ jest.mock('../../config', () => ({
   isDevelopment: false
 }));
 
+// Mock logger
+jest.mock('../../middleware/logging', () => ({
+  logger: {
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn()
+  }
+}));
+
 describe('Error Handler Middleware', () => {
   let mockRequest: Partial<Request>;
   let mockResponse: Partial<Response>;
@@ -136,11 +145,11 @@ describe('Error Handler Middleware', () => {
     describe('Logging', () => {
       it('should log error details', () => {
         const error = new Error('Test error');
-        const consoleSpy = jest.spyOn(console, 'error');
         
         errorHandler(error, mockRequest as Request, mockResponse as Response, mockNext);
 
-        expect(consoleSpy).toHaveBeenCalledWith('Error occurred:', {
+        const { logger } = require('../../middleware/logging');
+        expect(logger.error).toHaveBeenCalledWith('Error occurred:', {
           message: 'Test error',
           stack: undefined,
           url: '/api/test',

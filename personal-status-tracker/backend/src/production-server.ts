@@ -16,7 +16,7 @@ import statusRoutes from './routes/status';
 
 // Error handling
 import { errorHandler } from './middleware/errorHandler';
-import { AppError } from './utils/errors';
+import { AppError } from './errors/AppError';
 
 /**
  * Production-ready Express server with comprehensive security, monitoring, and performance optimizations

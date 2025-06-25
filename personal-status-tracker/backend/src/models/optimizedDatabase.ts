@@ -23,7 +23,7 @@ interface DatabaseConfig {
 }
 
 class OptimizedDatabase {
-  private db: SQLiteDatabase;
+  private db!: SQLiteDatabase;
   private config: DatabaseConfig;
   private connectionPool: SQLiteDatabase[] = [];
   private isInitialized = false;

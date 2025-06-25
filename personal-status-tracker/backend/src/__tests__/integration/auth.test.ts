@@ -1,40 +1,29 @@
 import request from 'supertest';
 import app from '../../index';
 import { UserModel } from '../../models/UserModel';
-import { database } from '../../models/database';
+import { TestHelpers } from '../utils/testHelpers';
 
 describe('Authentication Integration Tests', () => {
-  let db: any;
   let userModel: UserModel;
 
   beforeAll(async () => {
-    // Use test database
-    process.env.NODE_ENV = 'test';
-    db = database.getDatabase();
-    userModel = new UserModel();
+    userModel = TestHelpers.userModel;
   });
 
   beforeEach(async () => {
-    // Clean up users table before each test
-    await new Promise<void>((resolve, reject) => {
-      db.run('DELETE FROM users', (err: any) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
+    await TestHelpers.cleanupUsers();
   });
 
   afterAll(async () => {
-    await new Promise<void>((resolve) => {
-      db.close(() => resolve());
-    });
+    await TestHelpers.closeDatabase();
   });
 
   describe('POST /api/auth/register', () => {
     it('should register a new viewer user successfully', async () => {
       const userData = {
         username: 'testuser',
-        password: 'password123'
+        password: 'password123',
+        privacyPolicyAccepted: true
       };
 
       const response = await request(app)
@@ -47,6 +36,7 @@ describe('Authentication Integration Tests', () => {
       expect(response.body.data.role).toBe('viewer');
       expect(response.body.data.id).toBeDefined();
       expect(response.body.data.createdAt).toBeDefined();
+      expect(response.body.data.privacyPolicyAccepted).toBe(true);
       expect(response.body.data.password).toBeUndefined(); // Should not return password
       expect(response.body.message).toBe('Account created successfully');
     });
@@ -54,7 +44,8 @@ describe('Authentication Integration Tests', () => {
     it('should not allow duplicate usernames', async () => {
       const userData = {
         username: 'testuser',
-        password: 'password123'
+        password: 'password123',
+        privacyPolicyAccepted: true
       };
 
       // First registration
@@ -77,32 +68,44 @@ describe('Authentication Integration Tests', () => {
       // Missing username
       await request(app)
         .post('/api/auth/register')
-        .send({ password: 'password123' })
+        .send({ password: 'password123', privacyPolicyAccepted: true })
         .expect(400);
 
       // Missing password
       await request(app)
         .post('/api/auth/register')
-        .send({ username: 'testuser' })
+        .send({ username: 'testuser', privacyPolicyAccepted: true })
+        .expect(400);
+
+      // Missing privacy policy acceptance
+      await request(app)
+        .post('/api/auth/register')
+        .send({ username: 'testuser', password: 'password123' })
+        .expect(400);
+
+      // Privacy policy not accepted
+      await request(app)
+        .post('/api/auth/register')
+        .send({ username: 'testuser', password: 'password123', privacyPolicyAccepted: false })
         .expect(400);
 
       // Empty username
       await request(app)
         .post('/api/auth/register')
-        .send({ username: '', password: 'password123' })
+        .send({ username: '', password: 'password123', privacyPolicyAccepted: true })
         .expect(400);
 
       // Empty password
       await request(app)
         .post('/api/auth/register')
-        .send({ username: 'testuser', password: '' })
+        .send({ username: 'testuser', password: '', privacyPolicyAccepted: true })
         .expect(400);
     });
 
     it('should validate username length', async () => {
       const response = await request(app)
         .post('/api/auth/register')
-        .send({ username: 'ab', password: 'password123' })
+        .send({ username: 'ab', password: 'password123', privacyPolicyAccepted: true })
         .expect(400);
 
       expect(response.body.success).toBe(false);
@@ -111,7 +114,7 @@ describe('Authentication Integration Tests', () => {
     it('should validate password length', async () => {
       const response = await request(app)
         .post('/api/auth/register')
-        .send({ username: 'testuser', password: '123' })
+        .send({ username: 'testuser', password: '123', privacyPolicyAccepted: true })
         .expect(400);
 
       expect(response.body.success).toBe(false);
@@ -121,8 +124,8 @@ describe('Authentication Integration Tests', () => {
   describe('POST /api/auth/login', () => {
     beforeEach(async () => {
       // Create a test user for login tests
-      await userModel.createUser('testuser', 'password123', 'viewer');
-      await userModel.createUser('admin', 'adminpass', 'admin');
+      await userModel.createUser('testuser', 'password123', 'viewer', true);
+      await userModel.createUser('admin', 'adminpass', 'admin', true);
     });
 
     it('should login with valid credentials', async () => {
@@ -199,7 +202,7 @@ describe('Authentication Integration Tests', () => {
     let authToken: string;
 
     beforeEach(async () => {
-      await userModel.createUser('testuser', 'password123', 'viewer');
+      await userModel.createUser('testuser', 'password123', 'viewer', true);
       
       const loginResponse = await request(app)
         .post('/api/auth/login')
@@ -244,7 +247,7 @@ describe('Authentication Integration Tests', () => {
     let adminToken: string;
 
     beforeEach(async () => {
-      await userModel.createUser('admin', 'adminpass', 'admin');
+      await userModel.createUser('admin', 'adminpass', 'admin', true);
       
       const loginResponse = await request(app)
         .post('/api/auth/login')
@@ -273,7 +276,7 @@ describe('Authentication Integration Tests', () => {
 
     it('should reject non-admin users', async () => {
       // Create a viewer user and get their token
-      await userModel.createUser('viewer', 'viewerpass', 'viewer');
+      await userModel.createUser('viewer', 'viewerpass', 'viewer', true);
       const viewerLogin = await request(app)
         .post('/api/auth/login')
         .send({ username: 'viewer', password: 'viewerpass' });
@@ -312,9 +315,9 @@ describe('Authentication Integration Tests', () => {
     let adminToken: string;
 
     beforeEach(async () => {
-      await userModel.createUser('admin', 'adminpass', 'admin');
-      await userModel.createUser('viewer1', 'pass1', 'viewer');
-      await userModel.createUser('viewer2', 'pass2', 'viewer');
+      await userModel.createUser('admin', 'adminpass', 'admin', true);
+      await userModel.createUser('viewer1', 'pass1', 'viewer', true);
+      await userModel.createUser('viewer2', 'pass2', 'viewer', true);
       
       const loginResponse = await request(app)
         .post('/api/auth/login')
@@ -356,8 +359,8 @@ describe('Authentication Integration Tests', () => {
     let viewerId: number;
 
     beforeEach(async () => {
-      const admin = await userModel.createUser('admin', 'adminpass', 'admin');
-      const viewer = await userModel.createUser('viewer', 'viewerpass', 'viewer');
+      const admin = await userModel.createUser('admin', 'adminpass', 'admin', true);
+      const viewer = await userModel.createUser('viewer', 'viewerpass', 'viewer', true);
       
       adminId = admin.id!;
       viewerId = viewer.id!;
@@ -402,6 +405,90 @@ describe('Authentication Integration Tests', () => {
         .expect(403);
 
       expect(response.body.success).toBe(false);
+    });
+  });
+
+  describe('GET /api/auth/admins', () => {
+    let authToken: string;
+
+    beforeEach(async () => {
+      // Create some admin and viewer users
+      await userModel.createUser('admin1', 'password123', 'admin', true);
+      await userModel.createUser('admin2', 'password123', 'admin', true);
+      await userModel.createUser('viewer1', 'password123', 'viewer', true);
+      
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({ username: 'viewer1', password: 'password123' });
+      
+      authToken = loginResponse.body.data.token;
+    });
+
+    it('should return list of admin users for authenticated users', async () => {
+      const response = await request(app)
+        .get('/api/auth/admins')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeInstanceOf(Array);
+      expect(response.body.data).toHaveLength(2);
+      
+      // Check that only admin users are returned
+      response.body.data.forEach((user: any) => {
+        expect(user.role).toBe('admin');
+        expect(user.password).toBeUndefined();
+      });
+      
+      // Check specific admin usernames
+      const usernames = response.body.data.map((user: any) => user.username);
+      expect(usernames).toContain('admin1');
+      expect(usernames).toContain('admin2');
+      expect(usernames).not.toContain('viewer1');
+    });
+
+    it('should require authentication', async () => {
+      const response = await request(app)
+        .get('/api/auth/admins')
+        .expect(401);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toBe('Access token required');
+    });
+
+    it('should work for both admin and viewer users', async () => {
+      // Create an admin user and get their token
+      const adminLoginResponse = await request(app)
+        .post('/api/auth/login')
+        .send({ username: 'admin1', password: 'password123' });
+      
+      const adminToken = adminLoginResponse.body.data.token;
+
+      const response = await request(app)
+        .get('/api/auth/admins')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveLength(2);
+    });
+
+    it('should return empty array when no admin users exist', async () => {
+      // Delete all admin users
+      await new Promise<void>((resolve, reject) => {
+        TestHelpers.db.run("DELETE FROM users WHERE role = 'admin'", (err: any) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+
+      const response = await request(app)
+        .get('/api/auth/admins')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveLength(0);
     });
   });
 

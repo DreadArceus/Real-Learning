@@ -65,11 +65,13 @@ docker-compose ps
 
 ### 5. Create Admin User
 ```bash
-# Access the API container
-docker exec -it status-tracker-api sh
+# Option 1: Using environment variables directly
+ADMIN_USERNAME=admin ADMIN_PASSWORD=YourSecurePassword123! docker exec -it status-tracker-api npm run create-admin:prod
 
-# Run admin creation script
-node dist/scripts/createAdmin.js
+# Option 2: Set credentials in .env.production first, then run:
+docker exec -it status-tracker-api npm run create-admin:prod
+
+# Note: Ensure the password meets security requirements (12+ chars, complexity)
 ```
 
 ## Detailed Configuration
@@ -81,6 +83,10 @@ node dist/scripts/createAdmin.js
 # MUST be changed from defaults
 JWT_SECRET=your-super-secret-64-character-jwt-key-change-this-in-production
 SESSION_SECRET=your-super-secret-64-character-session-key-change-this-too
+
+# Admin credentials (for initial setup)
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-secure-admin-password-change-this
 
 # Domain configuration
 ALLOWED_ORIGINS=https://yourdomain.com

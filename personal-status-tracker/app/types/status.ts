@@ -1,6 +1,6 @@
 export interface StatusData {
-  lastWaterIntake: string;
-  altitude: number;
+  lastWaterIntake: string | null;
+  altitude: number | null;
   lastUpdated: string;
 }
 
@@ -16,7 +16,8 @@ export enum MoodLevel {
   EXCELLENT = 'Excellent',
   GOOD = 'Good',
   FAIR = 'Fair',
-  LOW = 'Low'
+  LOW = 'Low',
+  NO_DATA = 'No data'
 }
 
 export const ALTITUDE_CONFIG = {

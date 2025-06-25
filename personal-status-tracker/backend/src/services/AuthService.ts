@@ -45,7 +45,7 @@ export class AuthService {
     };
   }
 
-  async createUser(username: string, password: string, role: 'admin' | 'viewer' = 'viewer'): Promise<Omit<User, 'password'>> {
+  async createUser(username: string, password: string, role: 'admin' | 'viewer' = 'viewer', privacyPolicyAccepted: boolean = true): Promise<Omit<User, 'password'>> {
     try {
       // Check if user already exists
       const existingUser = await this.userModel.findByUsername(username);
@@ -54,7 +54,7 @@ export class AuthService {
       }
 
       // Create new user
-      const user = await this.userModel.createUser(username, password, role);
+      const user = await this.userModel.createUser(username, password, role, privacyPolicyAccepted);
       const { password: _, ...userWithoutPassword } = user;
       
       return userWithoutPassword;
@@ -68,6 +68,10 @@ export class AuthService {
 
   async getAllUsers(): Promise<Omit<User, 'password'>[]> {
     return this.userModel.getAllUsers();
+  }
+
+  async getAdminUsers(): Promise<Omit<User, 'password'>[]> {
+    return this.userModel.getAdminUsers();
   }
 
   async deleteUser(id: number): Promise<void> {

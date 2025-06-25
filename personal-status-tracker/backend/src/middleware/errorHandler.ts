@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ApiResponse } from '../types';
 import { AppError } from '../errors/AppError';
 import { config, isDevelopment } from '../config';
+import { logger } from './logging';
 
 export const errorHandler = (
   error: Error,
@@ -9,7 +10,7 @@ export const errorHandler = (
   res: Response<ApiResponse>,
   next: NextFunction
 ) => {
-  console.error('Error occurred:', {
+  logger.error('Error occurred:', {
     message: error.message,
     stack: isDevelopment ? error.stack : undefined,
     url: req.url,

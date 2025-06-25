@@ -8,7 +8,10 @@ export class UserModel {
   public async findByUsername(username: string): Promise<User | null> {
     return new Promise((resolve, reject) => {
       const query = `
-        SELECT id, username, password, role, created_at as createdAt, last_login as lastLogin
+        SELECT id, username, password, role, created_at as createdAt, last_login as lastLogin,
+               privacy_policy_accepted as privacyPolicyAccepted,
+               privacy_policy_version as privacyPolicyVersion,
+               privacy_policy_accepted_date as privacyPolicyAcceptedDate
         FROM users 
         WHERE username = ?
       `;
@@ -26,7 +29,10 @@ export class UserModel {
   public async findById(id: number): Promise<User | null> {
     return new Promise((resolve, reject) => {
       const query = `
-        SELECT id, username, password, role, created_at as createdAt, last_login as lastLogin
+        SELECT id, username, password, role, created_at as createdAt, last_login as lastLogin,
+               privacy_policy_accepted as privacyPolicyAccepted,
+               privacy_policy_version as privacyPolicyVersion,
+               privacy_policy_accepted_date as privacyPolicyAcceptedDate
         FROM users 
         WHERE id = ?
       `;
@@ -41,7 +47,7 @@ export class UserModel {
     });
   }
 
-  public async createUser(username: string, password: string, role: 'admin' | 'viewer' = 'viewer'): Promise<User> {
+  public async createUser(username: string, password: string, role: 'admin' | 'viewer' = 'viewer', privacyPolicyAccepted: boolean = true): Promise<User> {
     return new Promise(async (resolve, reject) => {
       try {
         // Hash password
@@ -49,11 +55,13 @@ export class UserModel {
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         const query = `
-          INSERT INTO users (username, password, role)
-          VALUES (?, ?, ?)
+          INSERT INTO users (username, password, role, privacy_policy_accepted, privacy_policy_version, privacy_policy_accepted_date)
+          VALUES (?, ?, ?, ?, ?, ?)
         `;
 
-        this.db.run(query, [username, hashedPassword, role], function(err) {
+        const currentTimestamp = new Date().toISOString();
+        
+        this.db.run(query, [username, hashedPassword, role, privacyPolicyAccepted, '1.0', currentTimestamp], function(err) {
           if (err) {
             reject(err);
           } else {
@@ -63,7 +71,10 @@ export class UserModel {
               username,
               password: '', // Don't return the password
               role,
-              createdAt: new Date().toISOString()
+              createdAt: currentTimestamp,
+              privacyPolicyAccepted,
+              privacyPolicyVersion: '1.0',
+              privacyPolicyAcceptedDate: currentTimestamp
             };
             resolve(newUser);
           }
@@ -102,6 +113,25 @@ export class UserModel {
         SELECT id, username, role, created_at as createdAt, last_login as lastLogin
         FROM users 
         ORDER BY created_at DESC
+      `;
+
+      this.db.all(query, [], (err, rows: any[]) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows || []);
+        }
+      });
+    });
+  }
+
+  public async getAdminUsers(): Promise<Omit<User, 'password'>[]> {
+    return new Promise((resolve, reject) => {
+      const query = `
+        SELECT id, username, role, created_at as createdAt, last_login as lastLogin
+        FROM users 
+        WHERE role = 'admin'
+        ORDER BY username ASC
       `;
 
       this.db.all(query, [], (err, rows: any[]) => {

@@ -11,7 +11,7 @@ export function Header() {
     try {
       await logout();
     } catch (error) {
-      console.error('Logout failed:', error);
+      // Silently handle logout errors
     }
   };
 

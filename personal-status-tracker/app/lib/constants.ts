@@ -1,7 +1,3 @@
-export const STORAGE_KEYS = {
-  STATUS_DATA: 'statusData'
-} as const;
-
 export const ALTITUDE_COLORS = {
   EXCELLENT: 'text-green-600 dark:text-green-400',
   GOOD: 'text-yellow-600 dark:text-yellow-400',

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { RegisterForm } from '../RegisterForm';
-import { mockFetch, mockApiResponse } from '../../../__tests__/auth-test-utils';
+import { mockFetch, mockApiResponse } from '@/app/__tests__/auth-test-utils';
 
 // Mock environment variables
 process.env.NEXT_PUBLIC_API_URL = 'http://localhost:3001';
@@ -32,6 +32,7 @@ describe('RegisterForm', () => {
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/confirm password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/i accept the privacy policy/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /create account/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /back to login/i })).toBeInTheDocument();
   });
@@ -172,11 +173,13 @@ describe('RegisterForm', () => {
     const usernameInput = screen.getByLabelText(/username/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const privacyCheckbox = screen.getByLabelText(/i accept the privacy policy/i);
     const submitButton = screen.getByRole('button', { name: /create account/i });
 
     fireEvent.change(usernameInput, { target: { value: 'testuser' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
     fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } });
+    fireEvent.click(privacyCheckbox);
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -187,7 +190,8 @@ describe('RegisterForm', () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             username: 'testuser',
-            password: 'password123'
+            password: 'password123',
+            privacyPolicyAccepted: true
           })
         })
       );
@@ -213,11 +217,13 @@ describe('RegisterForm', () => {
     const usernameInput = screen.getByLabelText(/username/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const privacyCheckbox = screen.getByLabelText(/i accept the privacy policy/i);
     const submitButton = screen.getByRole('button', { name: /create account/i });
 
     fireEvent.change(usernameInput, { target: { value: 'testuser' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
     fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } });
+    fireEvent.click(privacyCheckbox);
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -250,11 +256,13 @@ describe('RegisterForm', () => {
     const usernameInput = screen.getByLabelText(/username/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const privacyCheckbox = screen.getByLabelText(/i accept the privacy policy/i);
     const submitButton = screen.getByRole('button', { name: /create account/i });
 
     fireEvent.change(usernameInput, { target: { value: 'existinguser' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
     fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } });
+    fireEvent.click(privacyCheckbox);
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -286,11 +294,13 @@ describe('RegisterForm', () => {
     const usernameInput = screen.getByLabelText(/username/i);
     const passwordInput = screen.getByLabelText(/^password$/i);
     const confirmPasswordInput = screen.getByLabelText(/confirm password/i);
+    const privacyCheckbox = screen.getByLabelText(/i accept the privacy policy/i);
     const submitButton = screen.getByRole('button', { name: /create account/i });
 
     fireEvent.change(usernameInput, { target: { value: 'testuser' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
     fireEvent.change(confirmPasswordInput, { target: { value: 'password123' } });
+    fireEvent.click(privacyCheckbox);
     fireEvent.click(submitButton);
 
     // Check loading state

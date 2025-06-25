@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const CreateStatusSchema = z.object({
   lastWaterIntake: z.string().datetime({
     message: 'lastWaterIntake must be a valid ISO datetime string'
-  }),
+  }).nullable(),
   altitude: z.number().int().min(1).max(10, {
     message: 'altitude must be between 1 and 10'
   })
@@ -12,7 +12,7 @@ export const CreateStatusSchema = z.object({
 export const UpdateStatusSchema = z.object({
   lastWaterIntake: z.string().datetime({
     message: 'lastWaterIntake must be a valid ISO datetime string'
-  }).optional(),
+  }).nullable().optional(),
   altitude: z.number().int().min(1).max(10, {
     message: 'altitude must be between 1 and 10'
   }).optional()

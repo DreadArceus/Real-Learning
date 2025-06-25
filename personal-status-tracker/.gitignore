@@ -40,3 +40,47 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# logs
+logs/
+*.log
+backend/logs/
+backend/*.log
+
+# databases
+*.db
+*.sqlite
+*.sqlite3
+backend/data/
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Backup files
+*.bak
+*.backup
+
+# Encrypted files
+*.enc
+.encryption-key
+
+# Additional security patterns
+*.secret
+secrets.json
+.secrets/
+private/
+*.private
+.certificate
+certificates/
+*.crt.key

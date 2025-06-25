@@ -1,6 +1,6 @@
 import { authService } from './authService';
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -14,6 +14,21 @@ export interface StatusData {
   altitude: number;
   lastUpdated: string;
   createdAt?: string;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  role: 'admin' | 'viewer';
+  createdAt: string;
+  lastLogin?: string;
+}
+
+export interface HealthCheckResponse {
+  status: string;
+  timestamp: string;
+  uptime: number;
+  version?: string;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -54,46 +69,52 @@ class ApiService {
       
       return data;
     } catch (error) {
-      console.error('API request failed:', error);
       throw error instanceof Error ? error : new Error('Unknown API error');
     }
   }
 
-  async getLatestStatus(userId = 'default_user'): Promise<StatusData | null> {
-    const response = await this.request<StatusData>(`/api/status?userId=${userId}`);
+  async getLatestStatus(userId?: string): Promise<StatusData | null> {
+    const url = userId ? `/api/status?userId=${userId}` : '/api/status';
+    const response = await this.request<StatusData>(url);
     return response.data || null;
   }
 
-  async createStatus(data: Omit<StatusData, 'id' | 'userId' | 'createdAt'>, userId = 'default_user'): Promise<StatusData> {
-    const response = await this.request<StatusData>(`/api/status?userId=${userId}`, {
+  async createStatus(data: Omit<StatusData, 'id' | 'userId' | 'createdAt'>): Promise<StatusData> {
+    const response = await this.request<StatusData>('/api/status', {
       method: 'POST',
       body: JSON.stringify(data),
     });
     return response.data!;
   }
 
-  async updateStatus(data: Partial<Pick<StatusData, 'lastWaterIntake' | 'altitude'>>, userId = 'default_user'): Promise<StatusData> {
-    const response = await this.request<StatusData>(`/api/status?userId=${userId}`, {
+  async updateStatus(data: Partial<Pick<StatusData, 'lastWaterIntake' | 'altitude'>>): Promise<StatusData> {
+    const response = await this.request<StatusData>('/api/status', {
       method: 'PUT',
       body: JSON.stringify(data),
     });
     return response.data!;
   }
 
-  async getStatusHistory(userId = 'default_user', limit = 10): Promise<StatusData[]> {
-    const response = await this.request<StatusData[]>(`/api/status/history?userId=${userId}&limit=${limit}`);
+  async getStatusHistory(userId?: string, limit = 10): Promise<StatusData[]> {
+    const url = userId ? `/api/status/history?userId=${userId}&limit=${limit}` : `/api/status/history?limit=${limit}`;
+    const response = await this.request<StatusData[]>(url);
     return response.data || [];
   }
 
-  async deleteAllStatus(userId = 'default_user'): Promise<void> {
-    await this.request(`/api/status?userId=${userId}`, {
+  async deleteAllStatus(): Promise<void> {
+    await this.request('/api/status', {
       method: 'DELETE',
     });
   }
 
-  async healthCheck(): Promise<any> {
-    const response = await this.request('/health');
-    return response.data;
+  async getAdminUsers(): Promise<User[]> {
+    const response = await this.request<User[]>('/api/auth/admins');
+    return response.data || [];
+  }
+
+  async healthCheck(): Promise<HealthCheckResponse | null> {
+    const response = await this.request<HealthCheckResponse>('/health');
+    return response.data || null;
   }
 }
 

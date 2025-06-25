@@ -244,7 +244,46 @@ class MetricsCollector {
   }
 
   reset() {
-    this.__proto__.constructor.call(this);
+    // Reset all metrics to initial values
+    this.metrics = {
+      requests: {
+        total: 0,
+        successful: 0,
+        failed: 0,
+        byMethod: {},
+        byStatus: {},
+        byEndpoint: {}
+      },
+      performance: {
+        averageResponseTime: 0,
+        maxResponseTime: 0,
+        minResponseTime: Number.MAX_SAFE_INTEGER,
+        responseTimeHistory: []
+      },
+      errors: {
+        total: 0,
+        byType: {},
+        recent: []
+      },
+      database: {
+        connections: 0,
+        queries: 0,
+        averageQueryTime: 0,
+        slowQueries: 0
+      },
+      memory: {
+        heapUsed: 0,
+        heapTotal: 0,
+        external: 0,
+        rss: 0
+      },
+      system: {
+        uptime: 0,
+        startTime: Date.now(),
+        nodeVersion: process.version,
+        platform: process.platform
+      }
+    };
   }
 }
 
@@ -281,17 +320,17 @@ export const requestMetrics = (req: Request, res: Response, next: NextFunction) 
     }
     
     // Call original end
-    return originalEnd.apply(this, args);
+    return originalEnd.apply(this, args as Parameters<typeof originalEnd>);
   };
 
-  res.send = function(this: Response, ...args: any[]) {
+  res.send = function(this: Response, body?: any) {
     const endTime = performance.now();
     const responseTime = endTime - startTime;
     
     // Set response time header
     this.set('X-Response-Time', `${responseTime.toFixed(2)}ms`);
     
-    return originalSend.apply(this, args);
+    return originalSend.call(this, body);
   };
 
   next();

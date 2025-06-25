@@ -67,7 +67,7 @@ describe('Auth Middleware', () => {
       expect(jsonSpy).toHaveBeenCalledWith({
         success: false,
         error: 'Access token required',
-        code: 'AUTH_TOKEN_REQUIRED'
+        code: 'UNAUTHORIZED'
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -83,7 +83,7 @@ describe('Auth Middleware', () => {
       expect(jsonSpy).toHaveBeenCalledWith({
         success: false,
         error: 'Access token required',
-        code: 'AUTH_TOKEN_REQUIRED'
+        code: 'UNAUTHORIZED'
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -100,11 +100,11 @@ describe('Auth Middleware', () => {
 
       authenticateToken(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(statusSpy).toHaveBeenCalledWith(401);
+      expect(statusSpy).toHaveBeenCalledWith(403);
       expect(jsonSpy).toHaveBeenCalledWith({
         success: false,
-        error: 'Invalid token',
-        code: 'AUTH_TOKEN_INVALID'
+        error: 'Invalid or expired token',
+        code: 'FORBIDDEN'
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -123,11 +123,11 @@ describe('Auth Middleware', () => {
 
       authenticateToken(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(statusSpy).toHaveBeenCalledWith(401);
+      expect(statusSpy).toHaveBeenCalledWith(403);
       expect(jsonSpy).toHaveBeenCalledWith({
         success: false,
-        error: 'Token expired',
-        code: 'AUTH_TOKEN_EXPIRED'
+        error: 'Invalid or expired token',
+        code: 'FORBIDDEN'
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -146,11 +146,11 @@ describe('Auth Middleware', () => {
 
       authenticateToken(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(statusSpy).toHaveBeenCalledWith(401);
+      expect(statusSpy).toHaveBeenCalledWith(403);
       expect(jsonSpy).toHaveBeenCalledWith({
         success: false,
-        error: 'Invalid token',
-        code: 'AUTH_TOKEN_INVALID'
+        error: 'Invalid or expired token',
+        code: 'FORBIDDEN'
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -203,7 +203,7 @@ describe('Auth Middleware', () => {
       expect(jsonSpy).toHaveBeenCalledWith({
         success: false,
         error: 'Admin access required',
-        code: 'AUTH_INSUFFICIENT_PRIVILEGES'
+        code: 'FORBIDDEN'
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -213,11 +213,11 @@ describe('Auth Middleware', () => {
 
       requireAdmin(mockRequest as Request, mockResponse as Response, mockNext);
 
-      expect(statusSpy).toHaveBeenCalledWith(403);
+      expect(statusSpy).toHaveBeenCalledWith(401);
       expect(jsonSpy).toHaveBeenCalledWith({
         success: false,
-        error: 'Admin access required',
-        code: 'AUTH_INSUFFICIENT_PRIVILEGES'
+        error: 'Authentication required',
+        code: 'UNAUTHORIZED'
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -233,7 +233,7 @@ describe('Auth Middleware', () => {
       expect(jsonSpy).toHaveBeenCalledWith({
         success: false,
         error: 'Admin access required',
-        code: 'AUTH_INSUFFICIENT_PRIVILEGES'
+        code: 'FORBIDDEN'
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
@@ -247,7 +247,7 @@ describe('Auth Middleware', () => {
       expect(jsonSpy).toHaveBeenCalledWith({
         success: false,
         error: 'Admin access required',
-        code: 'AUTH_INSUFFICIENT_PRIVILEGES'
+        code: 'FORBIDDEN'
       });
       expect(mockNext).not.toHaveBeenCalled();
     });

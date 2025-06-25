@@ -4,15 +4,25 @@ import React from 'react';
 import { WaterIntakeCard } from '@/app/components/status/WaterIntakeCard';
 import { AltitudeMoodCard } from '@/app/components/status/AltitudeMoodCard';
 import { StatusSummary } from '@/app/components/status/StatusSummary';
+import { AdminSelector } from '@/app/components/status/AdminSelector';
 import { LoadingSpinner } from '@/app/components/ui/LoadingSpinner';
 import { ErrorBoundary } from '@/app/components/ui/ErrorBoundary';
-import { useStatusData } from '@/app/hooks/useStatusData';
-import { AuthProvider } from '@/app/contexts/AuthContext';
+import { useStatusWithUser } from '@/app/hooks/useStatusWithUser';
+import { AuthProvider, useAuth } from '@/app/contexts/AuthContext';
 import { ProtectedRoute } from '@/app/components/auth/ProtectedRoute';
 import { Header } from '@/app/components/layout/Header';
 
 function StatusTracker() {
-  const { statusData, isLoading, error, actions } = useStatusData();
+  const { user } = useAuth();
+  const { 
+    statusData, 
+    isLoading, 
+    error, 
+    selectedUserId, 
+    adminUsers, 
+    canEdit, 
+    actions 
+  } = useStatusWithUser();
 
   if (isLoading) {
     return <LoadingSpinner message="Loading your status data..." />;
@@ -39,17 +49,43 @@ function StatusTracker() {
       <Header />
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <div className="grid gap-8">
-          <div className="grid md:grid-cols-2 gap-6">
-            <WaterIntakeCard
-              lastWaterIntake={statusData.lastWaterIntake}
-              onUpdateWaterIntake={actions.updateWaterIntake}
+          {/* Show admin selector for viewers */}
+          {user?.role === 'viewer' && (
+            <AdminSelector
+              adminUsers={adminUsers}
+              selectedUserId={selectedUserId}
+              onSelectUser={actions.selectUser}
+              isLoading={isLoading}
             />
-            <AltitudeMoodCard
-              altitude={statusData.altitude}
-              onUpdateAltitude={actions.updateAltitude}
-            />
-          </div>
-          <StatusSummary statusData={statusData} />
+          )}
+          
+          {/* Show content only if viewer has selected an admin or user is admin */}
+          {(user?.role === 'admin' || (user?.role === 'viewer' && selectedUserId)) && (
+            <>
+              <div className="grid md:grid-cols-2 gap-6">
+                <WaterIntakeCard
+                  lastWaterIntake={statusData.lastWaterIntake || ''}
+                  onUpdateWaterIntake={canEdit ? actions.updateWaterIntake : undefined}
+                  readOnly={!canEdit}
+                />
+                <AltitudeMoodCard
+                  altitude={statusData.altitude}
+                  onUpdateAltitude={canEdit ? actions.updateAltitude : undefined}
+                  readOnly={!canEdit}
+                />
+              </div>
+              <StatusSummary statusData={statusData} />
+            </>
+          )}
+          
+          {/* Message for viewers who haven't selected an admin */}
+          {user?.role === 'viewer' && !selectedUserId && adminUsers.length > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
+              <p className="text-blue-600 dark:text-blue-400 text-lg">
+                Please select an admin above to view their status data.
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LoginForm } from '../LoginForm';
-import { mockFetch, mockAdminUser } from '@/__tests__/auth-test-utils';
+import { mockFetch, mockAdminUser } from '@/app/__tests__/auth-test-utils';
 
 // Mock the auth context
 const mockLogin = jest.fn();
@@ -17,7 +17,7 @@ const mockUseAuth = {
   logout: jest.fn()
 };
 
-jest.mock('../../../contexts/AuthContext', () => ({
+jest.mock('@/app/contexts/AuthContext', () => ({
   useAuth: () => mockUseAuth
 }));
 
@@ -128,14 +128,38 @@ describe('LoginForm', () => {
     expect(mockLogin).not.toHaveBeenCalled();
   });
 
-  it.skip('displays auth context error', () => {
-    // This test would require dynamic mocking which is complex in Jest
-    // The functionality works correctly in the actual application
-  });
+  it('shows loading state during authentication', async () => {
+    // Mock a delayed login response
+    const mockDelayedLogin = jest.fn().mockImplementation(() => 
+      new Promise(resolve => 
+        setTimeout(() => resolve({
+          success: true,
+          user: { id: 1, username: 'testuser', role: 'viewer' },
+          token: 'mock-token'
+        }), 100)
+      )
+    );
+    
+    mockAuthContextValue.login = mockDelayedLogin;
 
-  it.skip('shows loading state during authentication', () => {
-    // This test would require dynamic mocking which is complex in Jest
-    // The functionality works correctly in the actual application
+    render(<LoginForm />);
+
+    const usernameInput = screen.getByLabelText(/username/i);
+    const passwordInput = screen.getByLabelText(/password/i);
+    const submitButton = screen.getByRole('button', { name: /sign in/i });
+
+    fireEvent.change(usernameInput, { target: { value: 'testuser' } });
+    fireEvent.change(passwordInput, { target: { value: 'password123' } });
+    fireEvent.click(submitButton);
+
+    // Check loading state appears
+    expect(screen.getByText(/signing in.../i)).toBeInTheDocument();
+    expect(submitButton).toBeDisabled();
+
+    // Wait for loading to complete
+    await waitFor(() => {
+      expect(mockDelayedLogin).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('clears local error when user starts typing', async () => {

@@ -42,8 +42,17 @@ export class StatusService {
     try {
       // First check if user has any existing status
       const existingStatus = await this.statusModel.getLatestStatus(userId);
+      
       if (!existingStatus) {
-        throw new NotFoundError('No existing status found for user. Create a status first.');
+        // Create first status entry if none exists
+        // Use provided values or null for unspecified fields
+        const statusData: Omit<StatusData, 'id' | 'createdAt'> = {
+          lastWaterIntake: data.lastWaterIntake || null,
+          altitude: data.altitude ?? null,
+          lastUpdated: new Date().toISOString(),
+          userId
+        };
+        return await this.statusModel.createStatus(statusData, userId);
       }
 
       const statusData: Partial<StatusData> = {
@@ -57,9 +66,6 @@ export class StatusService {
       }
       return updatedStatus;
     } catch (error) {
-      if (error instanceof NotFoundError) {
-        throw error;
-      }
       throw new DatabaseError(
         'Failed to update status',
         error instanceof Error ? error : undefined
@@ -112,7 +118,10 @@ export class StatusService {
         };
       }
 
-      const averageAltitude = history.reduce((sum, entry) => sum + entry.altitude, 0) / history.length;
+      const validAltitudes = history.filter(entry => entry.altitude !== null).map(entry => entry.altitude!);
+      const averageAltitude = validAltitudes.length > 0 
+        ? validAltitudes.reduce((sum, altitude) => sum + altitude, 0) / validAltitudes.length 
+        : 0;
       const lastActivityDate = history[0].lastUpdated;
 
       return {

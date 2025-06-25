@@ -63,7 +63,7 @@ export class AuthService {
         });
       }
     } catch (error) {
-      console.error('Logout request failed:', error);
+      // Silently handle logout request errors
     } finally {
       // Always remove token from cookie
       Cookies.remove(TOKEN_COOKIE_NAME);
@@ -90,7 +90,7 @@ export class AuthService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Failed to get current user:', error);
+      // Silently handle user fetch errors
       this.logout();
       return null;
     }

@@ -130,15 +130,21 @@ describe('StatusService', () => {
       );
     });
 
-    it('should throw NotFoundError when no existing status', async () => {
+    it('should create new status when no existing status', async () => {
       mockStatusModel.getLatestStatus.mockResolvedValue(null);
+      mockStatusModel.createStatus.mockResolvedValue(mockStatusData);
 
-      await expect(statusService.updateStatus(updateInput, 'test_user'))
-        .rejects.toThrow(NotFoundError);
+      const result = await statusService.updateStatus(updateInput, 'test_user');
       
-      await expect(statusService.updateStatus(updateInput, 'test_user'))
-        .rejects.toThrow('No existing status found for user');
-      
+      expect(result).toEqual(mockStatusData);
+      expect(mockStatusModel.createStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lastWaterIntake: updateInput.lastWaterIntake,
+          altitude: updateInput.altitude,
+          userId: 'test_user'
+        }),
+        'test_user'
+      );
       expect(mockStatusModel.updateStatus).not.toHaveBeenCalled();
     });
 
@@ -151,16 +157,16 @@ describe('StatusService', () => {
         .rejects.toThrow(DatabaseError);
     });
 
-    it('should preserve NotFoundError from model', async () => {
+    it('should wrap model NotFoundError in DatabaseError', async () => {
       mockStatusModel.getLatestStatus.mockResolvedValue(mockStatusData);
       const notFoundError = new NotFoundError('Status');
       mockStatusModel.updateStatus.mockRejectedValue(notFoundError);
 
       await expect(statusService.updateStatus(updateInput, 'test_user'))
-        .rejects.toThrow(NotFoundError);
+        .rejects.toThrow(DatabaseError);
       
       await expect(statusService.updateStatus(updateInput, 'test_user'))
-        .rejects.toThrow('Status not found');
+        .rejects.toThrow('Failed to update status');
     });
   });
 

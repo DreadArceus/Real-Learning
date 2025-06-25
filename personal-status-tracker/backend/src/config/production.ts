@@ -11,15 +11,15 @@ const ProductionConfigSchema = z.object({
   
   // Database configuration
   DATABASE_PATH: z.string().default('./data/production.db'),
-  DB_CONNECTION_TIMEOUT: z.string().transform(Number).default(30000),
-  DB_QUERY_TIMEOUT: z.string().transform(Number).default(10000),
+  DB_CONNECTION_TIMEOUT: z.string().transform(Number).default('30000'),
+  DB_QUERY_TIMEOUT: z.string().transform(Number).default('10000'),
   DB_BACKUP_ENABLED: z.string().transform(val => val === 'true').default('true'),
-  DB_BACKUP_INTERVAL: z.string().transform(Number).default(86400000), // 24 hours
+  DB_BACKUP_INTERVAL: z.string().transform(Number).default('86400000'), // 24 hours
   
   // Security configuration
   JWT_SECRET: z.string().min(64), // Require strong JWT secret (64+ chars)
   JWT_EXPIRES_IN: z.string().default('24h'),
-  BCRYPT_ROUNDS: z.string().transform(Number).default(14), // Higher rounds for production
+  BCRYPT_ROUNDS: z.string().transform(Number).default('14'), // Higher rounds for production
   SESSION_SECRET: z.string().min(64), // Required for production
   
   // CORS and security headers
@@ -29,26 +29,26 @@ const ProductionConfigSchema = z.object({
   TRUST_PROXY: z.string().transform(val => val === 'true').default('true'),
   
   // Rate limiting
-  API_RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default(900000), // 15 minutes
-  API_RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default(100),
+  API_RATE_LIMIT_WINDOW_MS: z.string().transform(Number).default('900000'), // 15 minutes
+  API_RATE_LIMIT_MAX_REQUESTS: z.string().transform(Number).default('100'),
   
   // Authentication security
-  MAX_LOGIN_ATTEMPTS: z.string().transform(Number).default(5),
-  ACCOUNT_LOCKOUT_DURATION: z.string().transform(Number).default(1800000), // 30 minutes
-  PASSWORD_MIN_LENGTH: z.string().transform(Number).default(12),
+  MAX_LOGIN_ATTEMPTS: z.string().transform(Number).default('5'),
+  ACCOUNT_LOCKOUT_DURATION: z.string().transform(Number).default('1800000'), // 30 minutes
+  PASSWORD_MIN_LENGTH: z.string().transform(Number).default('12'),
   REQUIRE_STRONG_PASSWORDS: z.string().transform(val => val === 'true').default('true'),
-  FORCE_PASSWORD_CHANGE_DAYS: z.string().transform(Number).default(90),
+  FORCE_PASSWORD_CHANGE_DAYS: z.string().transform(Number).default('90'),
   
   // Logging and monitoring
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('warn'),
   ENABLE_REQUEST_LOGGING: z.string().transform(val => val === 'true').default('true'),
   LOG_FILE_PATH: z.string().default('./logs/app.log'),
   LOG_MAX_SIZE: z.string().default('100m'),
-  LOG_MAX_FILES: z.string().transform(Number).default(10),
+  LOG_MAX_FILES: z.string().transform(Number).default('10'),
   
   // Performance
-  REQUEST_TIMEOUT: z.string().transform(Number).default(30000),
-  KEEP_ALIVE_TIMEOUT: z.string().transform(Number).default(65000),
+  REQUEST_TIMEOUT: z.string().transform(Number).default('30000'),
+  KEEP_ALIVE_TIMEOUT: z.string().transform(Number).default('65000'),
   
   // Health checks and monitoring
   HEALTH_CHECK_ENABLED: z.string().transform(val => val === 'true').default('true'),

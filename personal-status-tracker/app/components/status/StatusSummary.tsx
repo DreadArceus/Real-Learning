@@ -12,7 +12,7 @@ interface StatusSummaryProps {
 
 export const StatusSummary = memo(function StatusSummary({ statusData }: StatusSummaryProps) {
   const hydrationStatus = useMemo(() => 
-    getHydrationStatus(statusData.lastWaterIntake), 
+    getHydrationStatus(statusData.lastWaterIntake || ''), 
     [statusData.lastWaterIntake]
   );
 

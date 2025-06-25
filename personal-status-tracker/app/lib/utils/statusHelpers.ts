@@ -19,14 +19,15 @@ export function getHydrationStatus(lastWaterIntake: string): HydrationStatus {
   return HydrationStatus.DEHYDRATED;
 }
 
-export function getMoodLevel(altitude: number): MoodLevel {
+export function getMoodLevel(altitude: number | null): MoodLevel {
+  if (altitude === null) return MoodLevel.NO_DATA;
   if (altitude >= ALTITUDE_CONFIG.THRESHOLDS.EXCELLENT) return MoodLevel.EXCELLENT;
   if (altitude >= ALTITUDE_CONFIG.THRESHOLDS.GOOD) return MoodLevel.GOOD;
   if (altitude >= ALTITUDE_CONFIG.THRESHOLDS.FAIR) return MoodLevel.FAIR;
   return MoodLevel.LOW;
 }
 
-export function getAltitudeColor(altitude: number): string {
+export function getAltitudeColor(altitude: number | null): string {
   const moodLevel = getMoodLevel(altitude);
   
   switch (moodLevel) {
@@ -36,12 +37,15 @@ export function getAltitudeColor(altitude: number): string {
       return ALTITUDE_COLORS.GOOD;
     case MoodLevel.FAIR:
       return ALTITUDE_COLORS.FAIR;
+    case MoodLevel.NO_DATA:
+      return 'text-gray-400';
     default:
       return ALTITUDE_COLORS.LOW;
   }
 }
 
-export function getAltitudeEmoji(altitude: number): AltitudeEmoji {
+export function getAltitudeEmoji(altitude: number | null): AltitudeEmoji | '❓' {
+  if (altitude === null) return '❓';
   if (altitude >= 9) return '🚀';
   if (altitude >= 7) return '✈️';
   if (altitude >= 5) return '🎈';

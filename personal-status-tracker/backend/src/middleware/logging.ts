@@ -4,13 +4,14 @@ import { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import { config } from '../config';
+import { EncryptedFileTransport } from '../utils/encryptedTransport';
 
 /**
  * Production-ready logging configuration
  */
 
 // Ensure logs directory exists
-const logsDir = path.dirname(config.LOG_FILE_PATH || './logs/app.log');
+const logsDir = path.dirname('./logs/app.log');
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
@@ -42,27 +43,25 @@ export const logger = winston.createLogger({
       )
     }),
     
-    // File transport for all logs
-    new winston.transports.File({
-      filename: config.LOG_FILE_PATH || './logs/app.log',
+    // Encrypted file transport for all logs
+    new EncryptedFileTransport({
+      filename: './logs/app.log',
       maxsize: 100 * 1024 * 1024, // 100MB
-      maxFiles: 10,
-      tailable: true
+      maxFiles: 10
     }),
     
-    // Separate file for errors
-    new winston.transports.File({
+    // Encrypted file transport for errors
+    new EncryptedFileTransport({
       filename: path.join(logsDir, 'error.log'),
       level: 'error',
       maxsize: 50 * 1024 * 1024, // 50MB
-      maxFiles: 5,
-      tailable: true
+      maxFiles: 5
     })
   ],
   
   // Handle exceptions and rejections
   exceptionHandlers: [
-    new winston.transports.File({
+    new EncryptedFileTransport({
       filename: path.join(logsDir, 'exceptions.log'),
       maxsize: 50 * 1024 * 1024,
       maxFiles: 3
@@ -70,7 +69,7 @@ export const logger = winston.createLogger({
   ],
   
   rejectionHandlers: [
-    new winston.transports.File({
+    new EncryptedFileTransport({
       filename: path.join(logsDir, 'rejections.log'),
       maxsize: 50 * 1024 * 1024,
       maxFiles: 3
@@ -147,10 +146,11 @@ export const logSecurityEvent = (event: string, details: any, req?: Request) => 
 export const performanceLogger = (req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   
+  // Use response finish event but avoid setting headers after they're sent
   res.on('finish', () => {
     const duration = Date.now() - start;
     
-    // Log slow requests
+    // Log slow requests only (don't try to set headers)
     if (duration > 1000) { // Requests taking more than 1 second
       logger.warn('Slow Request', {
         method: req.method,
@@ -161,10 +161,17 @@ export const performanceLogger = (req: Request, res: Response, next: NextFunctio
         userId: (req as any).user?.userId
       });
     }
-    
-    // Set response time header
-    res.set('X-Response-Time', duration.toString());
   });
+
+  // Set the response time header early in the response pipeline
+  const originalJson = res.json;
+  res.json = function(this: Response, body?: any) {
+    const duration = Date.now() - start;
+    if (!res.headersSent) {
+      res.set('X-Response-Time', duration.toString());
+    }
+    return originalJson.call(this, body);
+  };
   
   next();
 };
@@ -223,6 +230,23 @@ export const logAuthEvent = (event: 'login_success' | 'login_failure' | 'logout'
   if (event === 'login_failure') {
     logSecurityEvent('failed_login_attempt', { username, attempts: additionalInfo?.attempts }, req);
   }
+};
+
+// User data operation logging
+export const logDataOperation = (operation: 'create' | 'read' | 'update' | 'delete', resource: string, req: Request, additionalInfo?: any) => {
+  const dataLog = {
+    operation,
+    resource,
+    userId: (req as any).user?.userId,
+    username: (req as any).user?.username,
+    role: (req as any).user?.role,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    timestamp: new Date().toISOString(),
+    ...additionalInfo
+  };
+  
+  logger.info('Data Operation', dataLog);
 };
 
 // Helper function to determine critical security events

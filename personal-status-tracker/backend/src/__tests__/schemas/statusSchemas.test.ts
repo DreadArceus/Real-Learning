@@ -54,6 +54,17 @@ describe('Status Schemas', () => {
       expect(() => CreateStatusSchema.parse(invalidData)).toThrow();
     });
 
+    it('should accept null for lastWaterIntake (Never)', () => {
+      const validData = {
+        lastWaterIntake: null,
+        altitude: 8
+      };
+
+      const result = CreateStatusSchema.parse(validData);
+      expect(result.lastWaterIntake).toBeNull();
+      expect(result.altitude).toBe(8);
+    });
+
     it('should reject missing required fields', () => {
       expect(() => CreateStatusSchema.parse({})).toThrow();
       expect(() => CreateStatusSchema.parse({ lastWaterIntake: '2024-01-15T12:00:00.000Z' })).toThrow();
@@ -100,6 +111,15 @@ describe('Status Schemas', () => {
       };
 
       expect(() => UpdateStatusSchema.parse(invalidData)).toThrow();
+    });
+
+    it('should accept null for lastWaterIntake in updates (Never)', () => {
+      const validData = {
+        lastWaterIntake: null
+      };
+
+      const result = UpdateStatusSchema.parse(validData);
+      expect(result.lastWaterIntake).toBeNull();
     });
 
     it('should reject invalid altitude in update', () => {
