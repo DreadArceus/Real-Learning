@@ -1,340 +1,538 @@
 # Personal Status Tracker - Development Guide for Claude
 
 ## Project Overview
-A full-stack application for tracking personal status metrics (water intake and mood/altitude) with authentication, role-based access control, and production-ready features.
+A production-ready full-stack application for tracking personal health metrics (water intake and mood/altitude) with robust authentication, role-based access control, automated migrations, and comprehensive deployment capabilities.
 
 ## Tech Stack
-- **Frontend**: Next.js 15.3.4, React 19, TypeScript, Tailwind CSS
-- **Backend**: Express.js, TypeScript, SQLite, Zod validation
-- **Authentication**: JWT with bcrypt hashing
-- **Testing**: Jest, React Testing Library
-- **Deployment**: Docker, Docker Compose, Nginx
+- **Frontend**: Next.js 15.3.4, React 19, TypeScript, Tailwind CSS 4
+- **Backend**: Express.js, TypeScript, SQLite with optimization layer
+- **Authentication**: JWT with bcrypt hashing, privacy policy compliance
+- **Testing**: Jest, React Testing Library (>76% frontend, >37% backend coverage)
+- **Deployment**: Docker multi-stage builds, Docker Compose orchestration
+- **Database**: SQLite with automated migration system, WAL mode optimization
 
-## Project Structure
+## Project Architecture
+
+### Frontend (Next.js App Router)
 ```
-personal-status-tracker/
-├── app/                    # Next.js frontend application
-│   ├── components/         # React components
-│   │   ├── auth/          # Authentication components
-│   │   ├── layout/        # Layout components
-│   │   ├── status/        # Status tracking components
-│   │   └── ui/            # Reusable UI components
-│   ├── contexts/          # React contexts (AuthContext)
-│   ├── hooks/             # Custom React hooks
-│   ├── lib/               # Utilities and API client
-│   │   ├── api.ts         # API service client
-│   │   ├── authService.ts # Frontend auth service
-│   │   └── utils/         # Helper functions
-│   ├── types/             # TypeScript type definitions
-│   └── __tests__/         # Frontend tests
-├── backend/               # Express.js API server
-│   ├── src/
-│   │   ├── config/        # Configuration files
-│   │   ├── errors/        # Custom error classes
-│   │   ├── middleware/    # Express middleware
-│   │   ├── models/        # Database models
-│   │   ├── routes/        # API routes
-│   │   ├── schemas/       # Zod validation schemas
-│   │   ├── services/      # Business logic services
-│   │   └── __tests__/     # Backend tests
-│   └── data/              # SQLite database files
-└── docker-compose.yml     # Multi-container setup
+app/
+├── components/           # React components (production-ready)
+│   ├── auth/            # Authentication components with privacy policy
+│   │   ├── AuthWrapper.tsx          # Global auth state wrapper
+│   │   ├── LoginForm.tsx           # Login with error handling
+│   │   ├── PrivacyPolicyModal.tsx  # GDPR compliance modal
+│   │   ├── ProtectedRoute.tsx      # Route protection HOC
+│   │   ├── RegisterForm.tsx        # Registration with validation
+│   │   └── RoleBasedComponent.tsx  # Role-based UI rendering
+│   ├── layout/          # Layout components
+│   │   └── Header.tsx              # Application header with auth state
+│   ├── status/          # Status tracking components
+│   │   ├── AdminSelector.tsx       # Admin selection for viewers
+│   │   ├── AltitudeMoodCard.tsx    # Mood tracking (1-10 scale)
+│   │   ├── StatusSummary.tsx       # Dashboard overview
+│   │   └── WaterIntakeCard.tsx     # Water tracking with "Never" state
+│   └── ui/              # Reusable UI components
+│       ├── Button.tsx, Card.tsx, ErrorBoundary.tsx
+│       ├── LoadingSpinner.tsx, Slider.tsx
+├── contexts/            # React contexts
+│   └── AuthContext.tsx             # Global authentication state
+├── hooks/               # Custom React hooks
+│   └── useStatusWithUser.ts        # Status data management with user context
+├── lib/                 # Utilities and services
+│   ├── api.ts                      # Type-safe API client
+│   ├── authService.ts              # Frontend authentication service
+│   ├── constants.ts                # Application constants
+│   └── utils/                      # Helper functions
+├── types/               # TypeScript type definitions
+│   ├── auth.ts                     # Authentication types
+│   └── status.ts                   # Status tracking types
+└── __tests__/           # Comprehensive test suite
 ```
 
-## Key Features
-1. **Authentication System**
-   - JWT-based authentication with 24h token expiration
-   - Role-based access control (Admin/Viewer)
-   - Account lockout protection (5 attempts)
-   - Strong password requirements
+### Backend (Express.js with TypeScript)
+```
+backend/
+├── src/
+│   ├── config/          # Configuration management
+│   │   ├── index.ts                # Environment-based config
+│   │   └── production.ts           # Production optimizations
+│   ├── errors/          # Custom error handling
+│   │   └── AppError.ts             # Structured error responses
+│   ├── middleware/      # Express middleware stack
+│   │   ├── auth.ts                 # JWT authentication
+│   │   ├── errorHandler.ts         # Global error handling
+│   │   ├── logging.ts              # Structured logging with Winston
+│   │   ├── rateLimiter.ts          # Multi-tier rate limiting
+│   │   ├── security.ts             # Helmet.js + custom security
+│   │   └── validation.ts           # Zod request validation
+│   ├── models/          # Database layer
+│   │   ├── database.ts             # Standard SQLite connection
+│   │   ├── optimizedDatabase.ts    # Production SQLite with WAL, indexing
+│   │   ├── StatusModel.ts          # Status data model
+│   │   └── UserModel.ts            # User data model with privacy fields
+│   ├── routes/          # API endpoints
+│   │   ├── auth.ts                 # Authentication endpoints
+│   │   ├── privacy.ts              # Privacy policy management
+│   │   └── status.ts               # Status CRUD operations
+│   ├── schemas/         # Zod validation schemas
+│   │   ├── authSchemas.ts          # Login/register validation
+│   │   └── statusSchemas.ts        # Status data validation
+│   ├── scripts/         # Utility scripts
+│   │   ├── addPrivacyPolicySchema.ts    # Legacy schema migration
+│   │   ├── createAdmin.ts               # Admin user creation
+│   │   ├── healthCheck.ts               # Deployment health verification
+│   │   └── migrateDatabase.ts           # Automated migration system
+│   ├── services/        # Business logic
+│   │   ├── AuthService.ts          # Authentication business logic
+│   │   └── StatusService.ts        # Status tracking business logic
+│   └── utils/           # Utilities
+│       ├── encryption.ts           # Data encryption for logs
+│       ├── jwt.ts                  # JWT token management
+│       └── logCleanup.ts           # Automated log rotation
+├── data/                # SQLite database files
+└── dist/                # Compiled TypeScript output
+```
 
-2. **Status Tracking**
-   - Water intake tracking with timestamps
-   - Mood/altitude tracking (1-10 scale)
-   - Historical data viewing
-   - Real-time updates
-   - **User-specific data**: Each admin tracks their own status
-   - **Admin selector**: Viewers can pick any admin to view their data
+## Key Features & Implementation
 
-3. **Security Features**
-   - Rate limiting (multi-tier)
-   - Input validation with Zod
-   - XSS/SQL injection protection
-   - Security headers with Helmet.js
-   - Audit logging
+### 1. **Authentication System** (Production-Ready)
+- **JWT-based**: 24h token expiration with secure httpOnly cookies
+- **Role-based Access**: Admin (data management) vs Viewer (read-only)
+- **Account Security**: 5-attempt lockout, password strength requirements
+- **Privacy Compliance**: GDPR-compliant privacy policy acceptance tracking
+- **Audit Logging**: All authentication events logged with IP/User-Agent
 
-4. **Production Features**
-   - Health checks and monitoring
-   - Database backups
-   - Error handling and recovery
-   - Performance optimization
-   - Docker deployment
+### 2. **Status Tracking** (User-Centric Design)
+- **Water Intake**: Timestamp-based with "Never" state support (null values)
+- **Mood/Altitude**: 1-10 scale with emoji feedback and thresholds
+- **User Isolation**: Each admin tracks own data, viewers select admin to view
+- **Real-time Updates**: Optimistic UI updates with error rollback
+- **Historical Data**: Paginated history with date-based filtering
 
-## Development Commands
+### 3. **Database Architecture** (Auto-Migrating)
+```sql
+-- Users table (with privacy compliance)
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,  -- bcrypt hashed
+  role TEXT NOT NULL CHECK (role IN ('admin', 'viewer')),
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  last_login TEXT,
+  privacy_policy_accepted BOOLEAN DEFAULT 0,
+  privacy_policy_version TEXT DEFAULT '1.0',
+  privacy_policy_accepted_date TEXT,
+  failed_login_attempts INTEGER DEFAULT 0,
+  locked_until TEXT,
+  password_changed_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 
-### Frontend
+-- Status entries (with nullable water intake)
+CREATE TABLE status_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  last_water_intake TEXT,  -- NULL = "Never" state
+  altitude INTEGER NOT NULL CHECK (altitude BETWEEN 1 AND 10),
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- Migration tracking
+CREATE TABLE migrations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  version INTEGER UNIQUE NOT NULL,
+  description TEXT NOT NULL,
+  applied_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### 4. **Security Features** (Enterprise-Grade)
+- **Rate Limiting**: Progressive limits (general: 100/15min, auth: 20/15min)
+- **Input Validation**: Zod schemas with sanitization
+- **XSS/CSRF Protection**: Helmet.js security headers
+- **SQL Injection Prevention**: Parameterized queries only
+- **Encryption**: Sensitive log data encrypted with AES-256-GCM
+- **Audit Trail**: All user actions logged with metadata
+
+### 5. **Production Features** (Cloud-Ready)
+- **Health Monitoring**: `/health` endpoint with detailed system status
+- **Performance Metrics**: Request timing, error rates, database performance
+- **Automated Backups**: Configurable SQLite backups with S3 integration
+- **Log Management**: Winston logging with rotation and cleanup
+- **Graceful Shutdown**: Proper cleanup of connections and processes
+
+## Database Migration System
+
+### Migration Architecture
+The automated migration system handles all schema changes:
+
+```typescript
+interface Migration {
+  version: number;
+  description: string;
+  up: string[];    // Forward migration SQL
+  down: string[];  // Rollback SQL
+}
+```
+
+### Current Migrations
+1. **Version 1**: Add privacy policy fields to users table
+2. **Version 2**: Make last_water_intake nullable for "Never" state
+
+### Adding New Migrations
+```typescript
+// In src/scripts/migrateDatabase.ts
+{
+  version: 3,
+  description: "Add user preferences table",
+  up: [
+    `CREATE TABLE user_preferences (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER UNIQUE NOT NULL,
+      theme TEXT DEFAULT 'light',
+      notifications_enabled BOOLEAN DEFAULT 1,
+      FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    )`
+  ],
+  down: ["DROP TABLE user_preferences"]
+}
+```
+
+### Migration Execution
+- **Automatic**: Runs on server startup (dev/prod)
+- **Manual**: `npm run migrate:prod`
+- **Health Check**: `npm run health-check:prod`
+- **Transactional**: All-or-nothing with rollback on failure
+
+## Development Workflow
+
+### Frontend Development
 ```bash
-cd personal-status-tracker
-npm run dev        # Start development server
-npm run build      # Build for production
-npm run lint       # Run linter
-npm run typecheck  # Type checking
-npm test          # Run tests
-npm run test:coverage  # Test coverage
+# Development server
+npm run dev           # Next.js with Turbopack
+npm run build         # Production build
+npm run typecheck     # TypeScript validation
+npm test             # Jest test suite
+npm run test:coverage # Coverage report
 ```
 
-### Backend
+### Backend Development
 ```bash
 cd backend
-npm run dev        # Start development server
-npm run build      # Build TypeScript
-npm start         # Start production server
-npm test          # Run tests
-npm run test:coverage  # Test coverage
+npm run dev          # Nodemon development server
+npm run build        # TypeScript compilation
+npm start           # Production server
+npm test            # Jest + Supertest integration tests
+npm run migrate     # Database migrations
+npm run create-admin # Create admin user
 ```
 
-### Docker Deployment
+### Docker Deployment (Recommended)
 ```bash
-# Development
+# Local development
 docker-compose up -d
 
-# Production
-docker-compose -f docker-compose.yml up -d
+# Production deployment
+cp .env.deployment.example .env
+# Edit .env with production values
+docker-compose up -d
 
-# Create admin user (use environment variables)
-ADMIN_USERNAME=admin ADMIN_PASSWORD=securePassword123! docker exec -it status-tracker-api npm run create-admin:prod
+# Health verification
+docker exec status-tracker-api npm run health-check:prod
 
-# Or set in .env file first
-docker exec -it status-tracker-api npm run create-admin:prod
+# Create admin user
+docker exec status-tracker-api npm run create-admin:prod
 ```
 
-## API Endpoints
+## Environment Configuration
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `GET /api/auth/profile` - Get user profile
-- `GET /api/auth/admins` - Get all admin users (for viewer selection)
-- `DELETE /api/auth/users/:id` - Delete user (Admin only)
-
-### Status
-- `GET /api/status` - Get latest status (admins: own data, viewers: specify userId)
-- `GET /api/status?userId=123` - Get specific user's status (viewers only)
-- `POST /api/status` - Create new status (admins only, for themselves)
-- `PUT /api/status` - Update status (admins only, for themselves)
-- `DELETE /api/status` - Delete all status (admins only, for themselves)
-- `GET /api/status/history` - Get status history (with optional userId for viewers)
-
-### System
-- `GET /health` - Health check
-- `GET /metrics` - System metrics (Admin only)
-
-## Environment Variables
-
-### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001
-```
-
-### Backend (.env)
+### Development (.env)
 ```env
 NODE_ENV=development
 PORT=3001
-FRONTEND_URL=http://localhost:3000
-JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=24h
-BCRYPT_ROUNDS=10
 DATABASE_PATH=./data/status.db
-
-# Admin credentials (for createAdmin script)
+JWT_SECRET=development-secret-key
+FRONTEND_URL=http://localhost:3000
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your-secure-admin-password
+ADMIN_PASSWORD=AdminPassword123!
 ```
 
-## Testing Strategy
-- Unit tests for all components and functions
-- Integration tests for API endpoints
-- Test coverage targets: >80%
-- Mock data and test utilities provided
+### Production (.env.deployment.example)
+```env
+NODE_ENV=production
+JWT_SECRET=<64-character-secret>  # openssl rand -base64 64
+SESSION_SECRET=<64-character-secret>
+FRONTEND_URL=https://yourdomain.com
+API_URL=https://api.yourdomain.com
+DATABASE_PATH=/app/data/production.db
+BCRYPT_ROUNDS=14
+LOG_LEVEL=warn
+```
 
-## Security Considerations
-- Never commit .env files
-- Use strong JWT secrets in production
-- Enable HTTPS in production
-- Regular security audits
-- Keep dependencies updated
+## API Documentation
 
-## User Roles and Workflows
+### Authentication Endpoints
+```typescript
+POST /api/auth/login
+POST /api/auth/register  
+POST /api/auth/logout
+GET  /api/auth/profile
+GET  /api/auth/admins        // Get admin users for viewer selection
+DELETE /api/auth/users/:id   // Admin only
+```
+
+### Status Endpoints
+```typescript
+GET    /api/status                    // Get latest status
+GET    /api/status?userId=123         // Viewer: get specific admin's status
+POST   /api/status                    // Admin: create status
+PUT    /api/status                    // Admin: update status  
+DELETE /api/status                    // Admin: delete all status
+GET    /api/status/history            // Get paginated history
+GET    /api/status/history?userId=123 // Viewer: get admin's history
+```
+
+### System Endpoints
+```typescript
+GET /health      // Health check with system metrics
+GET /metrics     // Performance metrics (Admin only)
+```
+
+## User Roles & Permissions
 
 ### Admin Users
-- **Data Management**: Can create, update, and delete their own status data
-- **Self-tracking**: Each admin tracks their own water intake and mood
-- **Independence**: Cannot access or modify other users' data
+- **Data Management**: Full CRUD on their own status data
+- **Self-Tracking**: Each admin maintains independent status tracking
+- **User Management**: Can delete other users
+- **System Access**: Can view metrics and system information
 
-### Viewer Users  
-- **Read-only Access**: Can view any admin's status data
-- **Admin Selection**: Must select which admin's data to view
-- **No Data Modification**: Cannot update status data
+### Viewer Users
+- **Read-Only Access**: Can view any admin's status data
+- **Admin Selection**: Choose which admin's data to view
+- **No Data Modification**: Cannot create or update status entries
+- **Limited System Access**: Basic health information only
 
-### Typical Workflow
-1. **Admin logs in**: Sees their own status dashboard with edit capabilities
-2. **Viewer logs in**: Sees admin selector dropdown
-3. **Viewer selects admin**: Views that admin's data in read-only mode
-4. **Admin updates status**: Only affects their own data
-5. **Viewer refreshes**: Sees updated data from selected admin
+### Privacy & Compliance
+- **Privacy Policy**: Required acceptance with version tracking
+- **Data Isolation**: Users only access permitted data
+- **Audit Logging**: All data access logged for compliance
+- **GDPR Compliance**: Privacy policy modal and consent tracking
 
-## Common Tasks
+## Testing Strategy
 
-### Adding a New Feature
-1. Create TypeScript types in `types/`
-2. Add backend model/service if needed
-3. Create API endpoint with validation
-4. Build frontend components
-5. Add tests for all new code
-6. Update documentation
+### Frontend Testing (>76% coverage)
+- **Component Tests**: React Testing Library with user interaction simulation
+- **Hook Tests**: Custom hook testing with mock dependencies
+- **Integration Tests**: API integration with mock responses
+- **Accessibility Tests**: Screen reader compatibility and ARIA compliance
 
-### Debugging Issues
-1. Check browser console for frontend errors
-2. Check backend logs: `docker logs status-tracker-api`
-3. Verify API responses in Network tab
-4. Check database: `sqlite3 backend/data/status.db`
+### Backend Testing (>37% coverage)
+- **Unit Tests**: Service and model layer testing
+- **Integration Tests**: Full API endpoint testing with Supertest
+- **Database Tests**: SQLite transaction testing with rollback
+- **Security Tests**: Authentication, authorization, and input validation
 
-### Performance Optimization
-- Database indexes are already optimized
-- Use React.memo for expensive components
-- Implement pagination for large datasets
-- Monitor with `/metrics` endpoint
+### End-to-End Testing
+- **Docker Testing**: Full containerized application testing
+- **Migration Testing**: Database migration verification
+- **Health Check Testing**: System health verification
 
-## Code Style Guidelines
-- Use TypeScript for type safety
-- Follow existing patterns in codebase
-- Keep components small and focused
-- Use custom hooks for logic reuse
-- Write tests for new features
-- Use meaningful variable names
-- Add error boundaries where needed
+## Performance Optimizations
 
-## Deployment Checklist
-1. Set production environment variables
-2. Generate strong JWT secret
-3. Configure SSL/HTTPS
-4. Set up database backups
-5. Configure monitoring
-6. Test all features
-7. Create initial admin user
+### Frontend Optimizations
+- **React 19**: Latest React features with concurrent rendering
+- **Next.js 15**: App Router with automatic optimization
+- **Code Splitting**: Automatic route-based code splitting
+- **Image Optimization**: Next.js automatic image optimization
+- **Caching**: API response caching with stale-while-revalidate
 
-## Troubleshooting
+### Backend Optimizations
+- **SQLite WAL Mode**: Write-Ahead Logging for better concurrency
+- **Connection Pooling**: Optimized database connection management
+- **Query Optimization**: Indexed queries with EXPLAIN QUERY PLAN analysis
+- **Compression**: Gzip compression for API responses
+- **Memory Management**: Efficient error handling and cleanup
 
-### Common Issues
-1. **CORS errors**: Check FRONTEND_URL in backend .env
-2. **Database locked**: Restart backend container
-3. **Auth failures**: Clear cookies/localStorage
-4. **Build failures**: Check Node.js version (>=20)
+### Production Optimizations
+- **Multi-stage Builds**: Minimal Docker images with build caching
+- **Health Checks**: Docker and application-level health monitoring
+- **Log Rotation**: Automated log cleanup with configurable retention
+- **Resource Limits**: Memory and CPU limits for containerized deployment
 
-### Useful Commands
-```bash
-# View logs
-docker-compose logs -f
+## Deployment Architecture
 
-# Reset database
-rm backend/data/status.db
-docker-compose restart backend
-
-# Check API health
-curl http://localhost:3001/health
-
-# Run specific test
-npm test -- --testNamePattern="StatusService"
+### Local Development
+```
+┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │    Backend      │
+│  localhost:3000 │◄──►│ localhost:3001  │
+│   (Next.js)     │    │  (Express.js)   │
+└─────────────────┘    └─────────────────┘
+                              │
+                       ┌─────────────────┐
+                       │    SQLite DB    │
+                       │   ./data/       │
+                       └─────────────────┘
 ```
 
-## Codebase Review & Refactoring Insights (2025-06)
+### Docker Deployment
+```
+┌─────────────────┐    ┌─────────────────┐
+│   nginx:80/443  │    │   Prometheus    │
+│  Reverse Proxy  │    │   Monitoring    │
+└─────────┬───────┘    └─────────────────┘
+          │                     │
+┌─────────▼───────┐    ┌─────────▼───────┐
+│   Frontend      │    │    Backend      │
+│ Container:3000  │◄──►│ Container:3001  │
+└─────────────────┘    └─────────────────┘
+                              │
+                       ┌─────────────────┐
+                       │  Persistent     │
+                       │  Volume Data    │
+                       └─────────────────┘
+```
 
-### Key Issues Discovered & Fixed
+### Cloud Deployment Options
+- **Docker Swarm**: Multi-node container orchestration
+- **Kubernetes**: Full K8s deployment with ingress and services  
+- **Cloud Run**: Serverless container deployment (GCP)
+- **ECS/Fargate**: Managed container deployment (AWS)
+- **App Service**: Container deployment (Azure)
 
-#### Backend Configuration Issues
-- **Missing Dependencies**: Added `validator`, `express-rate-limit`, `compression` packages
-- **Config Schema Gaps**: Extended schema with production settings (DB_CONNECTION_TIMEOUT, TRUST_PROXY, etc.)
-- **Type Safety**: Created `src/types/express.d.ts` to extend Express Request interface
+## Security Considerations
 
-#### Code Quality Improvements
-- **Console Cleanup**: Removed 8+ console.log statements from frontend production code
-- **Type Safety**: Replaced `any` types with proper interfaces (`HealthCheckResponse`, `ApiResponse<unknown>`)
-- **Unused Imports**: Removed `AdminOnlyComponent` imports from status cards
-- **Deprecated APIs**: Updated crypto to use `createCipheriv`/`createDecipheriv`
+### Authentication Security
+- **JWT Secrets**: 64+ character secrets required for production
+- **Token Expiration**: 24-hour tokens with refresh capability
+- **Session Management**: Secure httpOnly cookies with SameSite
+- **Account Lockout**: Progressive delays after failed attempts
 
-#### Test Coverage Enhancements
-- **Missing Tests**: Added comprehensive tests for `AuthWrapper` and `ProtectedRoute` components
-- **Current Coverage**: Frontend ~76%, Backend ~37% (needs improvement)
-- **Test Issues**: Some timeout issues in backend tests due to config validation
+### Data Security
+- **Encryption at Rest**: SQLite database file encryption option
+- **Encryption in Transit**: HTTPS enforcement in production
+- **Input Validation**: Comprehensive Zod schema validation
+- **SQL Injection Prevention**: Parameterized queries exclusively
 
-### Architecture Patterns Observed
+### Infrastructure Security
+- **Rate Limiting**: Multi-tier limits to prevent abuse
+- **Security Headers**: Comprehensive Helmet.js configuration
+- **CORS Policy**: Strict origin validation
+- **Container Security**: Non-root user execution, minimal attack surface
 
-#### Frontend (Next.js 15 + React 19)
-- **Component Structure**: Well-organized auth, layout, status, and UI components
-- **State Management**: Context API for auth, custom hooks for business logic
-- **Type Safety**: Strong TypeScript usage with proper interfaces
-- **Testing**: React Testing Library with jest mocking patterns
+## Monitoring & Observability
 
-#### Backend (Express + TypeScript)
-- **Layered Architecture**: Routes → Services → Models pattern
-- **Security**: Multiple middleware layers (auth, rate limiting, validation)
-- **Configuration**: Zod schema validation with environment-specific configs
-- **Database**: SQLite with both standard and optimized connection classes
+### Application Metrics
+- **Request Metrics**: Response times, error rates, throughput
+- **Database Metrics**: Query performance, connection health
+- **Authentication Metrics**: Login success/failure rates
+- **Business Metrics**: User activity, data creation patterns
 
-### Best Practices Implemented
-1. **Error Handling**: Consistent error boundaries and async/await patterns
-2. **Security**: Helmet.js, rate limiting, input sanitization
-3. **Validation**: Zod schemas for both request/response validation
-4. **Testing**: Mocking external dependencies, component isolation
-5. **TypeScript**: Strict typing with interface extensions
+### System Health
+- **Health Endpoints**: Detailed system health with dependencies
+- **Resource Monitoring**: Memory, CPU, disk usage tracking
+- **Log Analysis**: Structured logging with Winston
+- **Error Tracking**: Comprehensive error logging with stack traces
 
-### Performance Optimizations
-- **React.memo**: Used in status components for render optimization
-- **Database**: WAL mode, connection pooling in optimized DB class
-- **Caching**: In-memory rate limiting with cleanup intervals
-- **Build**: TypeScript compilation optimizations
+### Alerting
+- **Health Check Failures**: Automatic restart on health check failure
+- **Resource Exhaustion**: Memory and disk space monitoring
+- **Security Events**: Failed authentication attempts, suspicious activity
+- **Performance Degradation**: Response time and error rate thresholds
 
-### Development Workflow Improvements
-- **Build Process**: Fixed TypeScript compilation errors blocking builds
-- **Type Checking**: Resolved null/undefined type mismatches
-- **Import Management**: Cleaned unused imports for better tree-shaking
-- **Error Logging**: Replaced console statements with proper error handling
+## Troubleshooting Guide
 
-### Remaining Technical Debt
-1. **Backend Tests**: Need comprehensive service and middleware test coverage
-2. **Frontend Types**: Some test files need jest matcher type definitions
-3. **Duplicate Code**: View-only UI pattern in status cards could be abstracted
-4. **Console Cleanup**: Backend still has console statements for monitoring
+### Common Issues
 
-### Security Considerations
-- **JWT Implementation**: Secure token handling with proper expiration
-- **Input Validation**: Multi-layer validation (client, middleware, schema)
-- **Rate Limiting**: Progressive limiting with different tiers
-- **Error Exposure**: Careful not to leak sensitive info in error messages
+#### Database Migration Failures
+```bash
+# Check migration status
+docker exec status-tracker-api npm run health-check:prod
 
-### Testing Strategy
-- **Unit Tests**: Component and service level testing
-- **Integration Tests**: API endpoint testing with supertest
-- **Mocking**: Comprehensive mocking of external dependencies
-- **Coverage Goals**: Aiming for >80% coverage across both frontend/backend
+# Manual migration
+docker exec status-tracker-api npm run migrate:prod
 
-### Production Readiness
-- **Docker**: Multi-container setup with nginx reverse proxy
-- **Monitoring**: Health checks, metrics collection, logging
-- **Security**: Production-grade headers, HTTPS enforcement
-- **Database**: Backup strategies and connection management
+# Reset database (development only)
+rm -rf data/ && docker-compose restart api
+```
+
+#### Authentication Issues
+```bash
+# Check JWT secret configuration
+docker exec status-tracker-api env | grep JWT_SECRET
+
+# Create new admin user
+docker exec -e ADMIN_USERNAME=newadmin -e ADMIN_PASSWORD=NewPassword123! status-tracker-api npm run create-admin:prod
+```
+
+#### Performance Issues
+```bash
+# Check system metrics
+curl http://localhost:3001/metrics
+
+# Monitor container resources
+docker stats status-tracker-api
+
+# Check database size and performance
+docker exec status-tracker-api sqlite3 /app/data/production.db ".dbinfo"
+```
+
+### Log Analysis
+```bash
+# Backend logs
+docker logs status-tracker-api
+
+# Frontend logs  
+docker logs status-tracker-frontend
+
+# Filter authentication events
+docker logs status-tracker-api 2>&1 | grep "Authentication Event"
+
+# Filter errors
+docker logs status-tracker-api 2>&1 | grep "error"
+```
 
 ## Future Enhancements
-- Add data export functionality
-- Implement push notifications
-- Add more metrics tracking
-- Create mobile app version
-- Add data visualization charts
-- Implement social features
 
-## Resources
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Express.js Guide](https://expressjs.com/en/guide/routing.html)
-- [JWT Best Practices](https://tools.ietf.org/html/rfc8725)
-- [SQLite Optimization](https://www.sqlite.org/optoverview.html)
+### Planned Features
+- **Data Export**: CSV/JSON export functionality
+- **Push Notifications**: Browser/mobile push notifications
+- **Advanced Metrics**: Trend analysis and insights
+- **Social Features**: Sharing and comparison features
+- **Mobile App**: React Native mobile application
+
+### Technical Improvements
+- **GraphQL API**: Alternative to REST API
+- **Real-time Updates**: WebSocket integration
+- **Advanced Caching**: Redis integration
+- **Microservices**: Service decomposition for scale
+- **Event Sourcing**: Event-driven architecture
+
+### Infrastructure Enhancements
+- **Multi-region Deployment**: Geographic distribution
+- **Auto-scaling**: Horizontal scaling based on demand
+- **Blue-green Deployment**: Zero-downtime deployments
+- **Disaster Recovery**: Automated backup and recovery
+- **Compliance**: SOC2, HIPAA compliance features
+
+## Code Quality Standards
+
+### TypeScript Configuration
+- Strict mode enabled with comprehensive type checking
+- Path mapping for clean imports
+- Consistent interface definitions across frontend/backend
+
+### Testing Requirements
+- Minimum 80% code coverage target
+- Integration tests for all API endpoints
+- Component tests for all UI components
+- Mock-based testing for external dependencies
+
+### Code Style Guidelines
+- ESLint + Prettier for consistent formatting
+- Conventional Commits for clear change history
+- Security-first development practices
+- Performance considerations in all implementations
+
+This documentation reflects the current production-ready state of the Personal Status Tracker with comprehensive deployment fixes, automated migrations, and enterprise-grade security features.

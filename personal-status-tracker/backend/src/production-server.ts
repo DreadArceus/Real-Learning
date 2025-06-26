@@ -17,6 +17,7 @@ import statusRoutes from './routes/status';
 // Error handling
 import { errorHandler } from './middleware/errorHandler';
 import { AppError } from './errors/AppError';
+import { DatabaseMigrator } from './scripts/migrateDatabase';
 
 /**
  * Production-ready Express server with comprehensive security, monitoring, and performance optimizations
@@ -172,6 +173,11 @@ class ProductionServer {
 
   public async start(): Promise<void> {
     try {
+      // Run database migrations first
+      const migrator = new DatabaseMigrator();
+      await migrator.migrate();
+      logger.info('Database migrations completed successfully');
+      
       // Wait for database to be ready
       await this.waitForDatabase();
 

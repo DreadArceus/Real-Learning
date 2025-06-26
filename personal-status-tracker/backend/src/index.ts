@@ -17,6 +17,7 @@ import {
   logStartup 
 } from './middleware/logging';
 import { logCleanupService } from './utils/logCleanup';
+import { DatabaseMigrator } from './scripts/migrateDatabase';
 
 const app = express();
 
@@ -109,17 +110,34 @@ process.on('unhandledRejection', (reason, promise) => {
   }
 });
 
+// Run database migrations before starting server
+async function startServer() {
+  try {
+    // Run database migrations
+    const migrator = new DatabaseMigrator();
+    await migrator.migrate();
+    logger.info('Database migrations completed successfully');
+    
+    // Start the server
+    server = app.listen(config.PORT, () => {
+      logStartup(config.PORT);
+      logCleanupService.start();
+      console.log(`🚀 Personal Status Tracker API running on port ${config.PORT}`);
+      console.log(`📊 Health check: http://localhost:${config.PORT}/health`);
+      console.log(`📈 API endpoints: http://localhost:${config.PORT}/api/status`);
+      console.log(`🌍 Environment: ${config.NODE_ENV}`);
+    });
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
 // Only start server if not in test environment
 let server: any;
 if (process.env.NODE_ENV !== 'test') {
-  server = app.listen(config.PORT, () => {
-    logStartup(config.PORT);
-    logCleanupService.start();
-    console.log(`🚀 Personal Status Tracker API running on port ${config.PORT}`);
-    console.log(`📊 Health check: http://localhost:${config.PORT}/health`);
-    console.log(`📈 API endpoints: http://localhost:${config.PORT}/api/status`);
-    console.log(`🌍 Environment: ${config.NODE_ENV}`);
-  });
+  startServer();
 }
 
 export default app;

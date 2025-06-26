@@ -13,10 +13,10 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - DATABASE_PATH=/app/data/production.db
-      - JWT_SECRET=${JWT_SECRET}
-      - SESSION_SECRET=${SESSION_SECRET}
+      - JWT_SECRET=${JWT_SECRET:-your-super-secret-jwt-key-change-this}
+      - SESSION_SECRET=${SESSION_SECRET:-your-super-secret-session-key-change-this}
       - BCRYPT_ROUNDS=14
-      - ALLOWED_ORIGINS=${FRONTEND_URL}
+      - ALLOWED_ORIGINS=${FRONTEND_URL:-http://localhost:3000}
       - COOKIE_SECURE=true
       - TRUST_PROXY=true
       - API_RATE_LIMIT_WINDOW_MS=900000
@@ -28,6 +28,7 @@ services:
       - DB_BACKUP_INTERVAL=86400000
       - HEALTH_CHECK_ENABLED=true
       - METRICS_ENABLED=true
+      - RUN_MIGRATIONS=true
     ports:
       - "${API_PORT:-3001}:3001"
     volumes:

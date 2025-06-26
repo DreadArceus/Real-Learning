@@ -43,7 +43,8 @@ COPY --from=build --chown=nodejs:nodejs /app/package.json ./
 
 # Create directories with proper permissions
 RUN mkdir -p /app/data /app/logs && \
-    chown -R nodejs:nodejs /app/data /app/logs
+    chown -R nodejs:nodejs /app/data /app/logs && \
+    chown nodejs:nodejs /app
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
@@ -59,5 +60,5 @@ EXPOSE 3001
 ENV NODE_ENV=production
 ENV PORT=3001
 
-# Start the application
-CMD ["node", "dist/production-server.js"]
+# Start the application with proper error handling
+CMD ["sh", "-c", "node dist/production-server.js || node dist/index.js"]

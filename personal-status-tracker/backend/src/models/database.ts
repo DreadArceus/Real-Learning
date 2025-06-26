@@ -28,7 +28,10 @@ export class Database {
         password TEXT NOT NULL,
         role TEXT NOT NULL CHECK (role IN ('admin', 'viewer')),
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        last_login TEXT
+        last_login TEXT,
+        privacy_policy_accepted BOOLEAN DEFAULT 0,
+        privacy_policy_version TEXT DEFAULT '1.0',
+        privacy_policy_accepted_date TEXT
       )
     `;
 
@@ -36,7 +39,7 @@ export class Database {
       CREATE TABLE IF NOT EXISTS status_entries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT DEFAULT 'default_user',
-        last_water_intake TEXT NOT NULL,
+        last_water_intake TEXT,
         altitude INTEGER NOT NULL CHECK (altitude >= 1 AND altitude <= 10),
         last_updated TEXT NOT NULL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP

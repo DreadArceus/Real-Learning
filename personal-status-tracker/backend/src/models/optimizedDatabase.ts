@@ -143,7 +143,10 @@ class OptimizedDatabase {
         last_login TEXT,
         failed_login_attempts INTEGER DEFAULT 0,
         locked_until TEXT,
-        password_changed_at TEXT DEFAULT CURRENT_TIMESTAMP
+        password_changed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        privacy_policy_accepted BOOLEAN DEFAULT 0,
+        privacy_policy_version TEXT DEFAULT '1.0',
+        privacy_policy_accepted_date TEXT
       )`,
       
       'CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)',
@@ -154,7 +157,7 @@ class OptimizedDatabase {
       `CREATE TABLE IF NOT EXISTS status_entries (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        last_water_intake TEXT NOT NULL,
+        last_water_intake TEXT,
         altitude INTEGER NOT NULL CHECK (altitude BETWEEN 1 AND 10),
         notes TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,

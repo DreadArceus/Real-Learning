@@ -10,8 +10,8 @@ export interface ApiResponse<T = unknown> {
 export interface StatusData {
   id?: number;
   userId?: string;
-  lastWaterIntake: string;
-  altitude: number;
+  lastWaterIntake: string | null;
+  altitude: number | null;
   lastUpdated: string;
   createdAt?: string;
 }
@@ -44,7 +44,7 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
-    
+
     try {
       const response = await fetch(url, {
         headers: {
@@ -56,7 +56,7 @@ class ApiService {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         // Handle authentication errors
         if (response.status === 401 || response.status === 403) {
@@ -66,7 +66,7 @@ class ApiService {
         }
         throw new Error(data.error || `HTTP ${response.status}`);
       }
-      
+
       return data;
     } catch (error) {
       throw error instanceof Error ? error : new Error('Unknown API error');
